@@ -343,6 +343,53 @@ JOIN kemenag_survey.services s ON s.id = t.service_id
 GROUP BY t.service_id, s.name, t.index_type;
 
 -- ============================================================
+-- VIEW: kemenag_survey.vw_index_summary_by_service_combined
+-- ============================================================
+
+CREATE OR REPLACE VIEW kemenag_survey.vw_index_summary_by_service_combined AS
+WITH per_service AS (
+    SELECT r.service_id,
+        ra.unsur_id,
+        avg(ra.rating_value::numeric) AS avg_rating
+    FROM kemenag_survey.responses r
+        JOIN kemenag_survey.response_answers ra ON ra.response_id = r.id
+        JOIN kemenag_survey.unsur u ON u.id = ra.unsur_id
+    WHERE u.is_active = true
+    GROUP BY r.service_id, ra.unsur_id
+), aktif_unsur AS (
+    SELECT count(*) AS total_unsur
+    FROM kemenag_survey.unsur
+    WHERE unsur.is_active = true
+), tertimbang AS (
+    SELECT ps.service_id,
+        ps.avg_rating,
+        au.total_unsur,
+        ps.avg_rating / au.total_unsur::numeric AS weighted
+    FROM per_service ps
+        CROSS JOIN aktif_unsur au
+), response_counts AS (
+    SELECT responses.service_id,
+        count(responses.id) AS jumlah_responden
+    FROM kemenag_survey.responses
+    GROUP BY responses.service_id
+)
+SELECT t.service_id,
+    s.name AS service_name,
+    round(sum(t.weighted), 4) AS nilai_index,
+    round(sum(t.weighted) * 25::numeric, 2) AS nilai_konversi,
+    CASE
+        WHEN round(sum(t.weighted) * 25::numeric, 2) >= 88.31 THEN 'A'::text
+        WHEN round(sum(t.weighted) * 25::numeric, 2) >= 76.61 THEN 'B'::text
+        WHEN round(sum(t.weighted) * 25::numeric, 2) >= 65.00 THEN 'C'::text
+        ELSE 'D'::text
+    END AS mutu,
+    COALESCE(rc.jumlah_responden, 0::bigint)::integer AS jumlah_responden
+FROM tertimbang t
+    JOIN kemenag_survey.services s ON s.id = t.service_id
+    LEFT JOIN response_counts rc ON rc.service_id = t.service_id
+GROUP BY t.service_id, s.name, rc.jumlah_responden;
+
+-- ============================================================
 -- VIEW: kemenag_survey.vw_index_trend
 -- ============================================================
 

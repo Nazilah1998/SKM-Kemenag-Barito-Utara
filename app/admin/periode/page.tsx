@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Plus, Pencil, Trash2, Loader2 } from 'lucide-react'
+import { Plus, Pencil, Trash2, Loader2, Calendar } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -14,7 +14,7 @@ import {
   Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
 } from '@/components/ui/table'
 import {
-  Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose,
 } from '@/components/ui/dialog'
 import {
   AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogTitle,
@@ -49,6 +49,8 @@ export default function AdminPeriodePage() {
   const [deleteDialog, setDeleteDialog] = useState<SurveyPeriod | null>(null)
   const [deleting, setDeleting] = useState(false)
   const [settingActive, setSettingActive] = useState(false)
+  const [autoYear, setAutoYear] = useState<number>(new Date().getFullYear())
+  const [autoPart, setAutoPart] = useState<string>('1')
 
   const supabase = createClient()
 
@@ -57,12 +59,51 @@ export default function AdminPeriodePage() {
     defaultValues: { period_type: 'triwulan', label: '', start_date: '', end_date: '' },
   })
 
+  const pt = watch('period_type')
+
+  useEffect(() => {
+    setAutoPart('1')
+  }, [pt])
+
+  function handleAutoGenerate() {
+    const year = autoYear
+    const part = parseInt(autoPart)
+    
+    let label = ''
+    let start = ''
+    let end = ''
+    
+    if (pt === 'triwulan') {
+      const romans = ['I', 'II', 'III', 'IV']
+      label = `Triwulan ${romans[part - 1]} Tahun ${year}`
+      if (part === 1) { start = `${year}-01-01`; end = `${year}-03-31` }
+      if (part === 2) { start = `${year}-04-01`; end = `${year}-06-30` }
+      if (part === 3) { start = `${year}-07-01`; end = `${year}-09-30` }
+      if (part === 4) { start = `${year}-10-01`; end = `${year}-12-31` }
+    } else if (pt === 'semester') {
+      const romans = ['I', 'II']
+      label = `Semester ${romans[part - 1]} Tahun ${year}`
+      if (part === 1) { start = `${year}-01-01`; end = `${year}-06-30` }
+      if (part === 2) { start = `${year}-07-01`; end = `${year}-12-31` }
+    } else if (pt === 'tahunan') {
+      label = `Tahun ${year}`
+      start = `${year}-01-01`
+      end = `${year}-12-31`
+    }
+
+    setValue('label', label)
+    setValue('start_date', start)
+    setValue('end_date', end)
+    toast.success('Form terisi otomatis berdasarkan pilihan')
+  }
+
   async function fetchPeriods() {
     const { data } = await supabase.from('survey_periods').select('*').order('start_date', { ascending: false })
     if (data) setPeriods(data as SurveyPeriod[])
     setLoading(false)
   }
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { fetchPeriods() }, [])
 
   function openCreate() {
@@ -102,7 +143,15 @@ export default function AdminPeriodePage() {
     if (!deleteDialog) return
     setDeleting(true)
     const { error } = await supabase.from('survey_periods').delete().eq('id', deleteDialog.id)
-    if (error) { toast.error('Gagal menghapus periode'); setDeleting(false); return }
+    if (error) { 
+      if (error.code === '23503') {
+        toast.error('Gagal menghapus! Masih ada data respon yang terikat dengan periode ini.')
+      } else {
+        toast.error('Gagal menghapus periode: ' + error.message)
+      }
+      setDeleting(false); 
+      return 
+    }
     toast.success('Periode berhasil dihapus')
     setDeleteDialog(null)
     setDeleting(false)
@@ -129,18 +178,24 @@ export default function AdminPeriodePage() {
   }
 
   return (
-    <div>
-      <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Periode Survei</h1>
-        <Button onClick={openCreate} className="gap-2">
+    <div className="space-y-6 max-w-7xl mx-auto">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-gray-900 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800">
+        <div>
+          <h1 className="text-2xl font-black tracking-tight text-gray-900 dark:text-white flex items-center gap-3">
+            <Calendar className="size-6 text-emerald-600" />
+            Periode Survei
+          </h1>
+          <p className="text-gray-500 dark:text-gray-400 mt-1 text-sm font-medium">Atur rentang waktu survei (Semester/Triwulan) yang aktif.</p>
+        </div>
+        <Button onClick={openCreate} className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-sm shadow-emerald-500/20 w-full md:w-auto">
           <Plus className="size-4" />
           Tambah Periode
         </Button>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Daftar Periode Survei</CardTitle>
+      <Card className="border border-gray-100 dark:border-gray-800 shadow-lg shadow-gray-200/40 dark:shadow-black/20 bg-white/60 dark:bg-gray-900/60 backdrop-blur-xl rounded-2xl overflow-hidden">
+        <CardHeader className="bg-gray-50/50 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-800">
+          <CardTitle className="text-lg">Daftar Periode Survei</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
           <Table>
@@ -225,6 +280,7 @@ export default function AdminPeriodePage() {
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div className="space-y-2">
               <Label>Tipe Periode</Label>
+
               <Select value={watch('period_type')} onValueChange={(v) => v && setValue('period_type', v as 'triwulan' | 'semester' | 'tahunan')}>
                 <SelectTrigger className="w-full">
                   <SelectValue />
@@ -236,6 +292,40 @@ export default function AdminPeriodePage() {
                 </SelectContent>
               </Select>
             </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pb-4 border-b border-gray-100 dark:border-gray-800">
+              <div className="space-y-2">
+                <Label>Tahun</Label>
+                <Input type="number" value={autoYear} onChange={(e) => setAutoYear(parseInt(e.target.value))} />
+              </div>
+              <div className="space-y-2 col-span-1 md:col-span-2">
+                <Label>Pilihan {pt === 'triwulan' ? 'Triwulan' : pt === 'semester' ? 'Semester' : 'Tahun'}</Label>
+                <div className="flex gap-2">
+                  <Select value={autoPart} onValueChange={(v) => v && setAutoPart(v)}>
+                    <SelectTrigger className="flex-1"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {pt === 'triwulan' && <>
+                        <SelectItem value="1">Triwulan I (Jan - Mar)</SelectItem>
+                        <SelectItem value="2">Triwulan II (Apr - Jun)</SelectItem>
+                        <SelectItem value="3">Triwulan III (Jul - Sep)</SelectItem>
+                        <SelectItem value="4">Triwulan IV (Okt - Des)</SelectItem>
+                      </>}
+                      {pt === 'semester' && <>
+                        <SelectItem value="1">Semester I (Jan - Jun)</SelectItem>
+                        <SelectItem value="2">Semester II (Jul - Des)</SelectItem>
+                      </>}
+                      {pt === 'tahunan' && <>
+                        <SelectItem value="1">Satu Tahun Penuh</SelectItem>
+                      </>}
+                    </SelectContent>
+                  </Select>
+                  <Button type="button" variant="secondary" onClick={handleAutoGenerate} className="shrink-0 bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50">
+                    Isi Otomatis
+                  </Button>
+                </div>
+              </div>
+            </div>
+
             <div className="space-y-2">
               <Label htmlFor="label">Label</Label>
               <Input id="label" placeholder="Contoh: Triwulan I 2025" {...register('label')} />

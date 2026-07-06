@@ -56,6 +56,7 @@ export interface DemographicField {
   created_at: string
   updated_at: string
   options?: DemographicOption[]
+  demographic_options?: DemographicOption[]
 }
 
 export interface DemographicOption {
@@ -70,14 +71,17 @@ export interface DemographicOption {
 export interface Response {
   id: string
   service_id: string
-  period_id: string
+  period_id: string | null
   is_anonymous: boolean
   respondent_name: string | null
   respondent_contact: string | null
+  respondent_address: string | null
   locale: string
   turnstile_verified: boolean
   ip_address: string | null
   submitted_at: string
+  services?: Service
+  survey_periods?: SurveyPeriod
   service?: Service
   period?: SurveyPeriod
 }
@@ -119,6 +123,16 @@ export interface IndexByService {
   nilai_index: number
   nilai_konversi: number
   mutu: 'A' | 'B' | 'C' | 'D'
+  jumlah_responden: number
+}
+
+export interface IndexByServiceCombined {
+  service_id: string
+  service_name: string
+  nilai_index: number
+  nilai_konversi: number
+  mutu: 'A' | 'B' | 'C' | 'D'
+  jumlah_responden: number
 }
 
 export interface IndexTrend {
@@ -129,4 +143,25 @@ export interface IndexTrend {
 
 export interface UnsurWithQuestions extends Unsur {
   questions: Question[]
+}
+
+export interface UnsurSummary {
+  service_id: string
+  service_name: string
+  unsur_id: string
+  unsur_name: string
+  index_type: 'IPKP' | 'IPAK'
+  jumlah_pertanyaan: number
+  total_nilai: number
+  jumlah_responden: number
+  nilai_rata_rata_unsur: number
+  nilai_rata_rata_tertimbang: number
+}
+
+export interface DemographicSummary {
+  service_id: string
+  service_name: string
+  field_key: string
+  demographic_value: string
+  count: number
 }

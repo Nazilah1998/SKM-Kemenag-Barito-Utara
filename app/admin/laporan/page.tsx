@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { FileSpreadsheet, FileText, Loader2 } from 'lucide-react'
+import { FileSpreadsheet, FileText, Loader2, PieChart, Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select'
@@ -42,7 +42,7 @@ export default function AdminLaporanPage() {
       setLoading(false)
     }
     fetchData()
-  }, [])
+  }, [supabase])
 
   async function handleExportExcel() {
     setGenerating(true)
@@ -114,9 +114,9 @@ export default function AdminLaporanPage() {
 
         if (summary) {
           sheet.addRow({})
-          sheet.addRow({} as any).getCell(2).value = `Nilai Index: ${summary.nilai_index.toFixed(4)}`
-          sheet.addRow({} as any).getCell(2).value = `Nilai Konversi: ${summary.nilai_konversi.toFixed(2)}`
-          sheet.addRow({} as any).getCell(2).value = `Mutu: ${summary.mutu} (${summary.kinerja})`
+          sheet.addRow([]).getCell(2).value = `Nilai Index: ${summary.nilai_index.toFixed(4)}`
+          sheet.addRow([]).getCell(2).value = `Nilai Konversi: ${summary.nilai_konversi.toFixed(2)}`
+          sheet.addRow([]).getCell(2).value = `Mutu: ${summary.mutu} (${summary.kinerja})`
         }
 
         sheet.getColumn(1).width = 5
@@ -158,9 +158,15 @@ export default function AdminLaporanPage() {
   const ipakSummary = indexSummary.find((s) => s.index_type === 'IPAK')
 
   return (
-    <div>
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold">Laporan</h1>
+    <div className="space-y-6 max-w-7xl mx-auto">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-gray-900 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800">
+        <div>
+          <h1 className="text-2xl font-black tracking-tight text-gray-900 dark:text-white flex items-center gap-3">
+            <PieChart className="size-6 text-emerald-600" />
+            Laporan
+          </h1>
+          <p className="text-gray-500 dark:text-gray-400 mt-1 text-sm font-medium">Rekapitulasi hasil indeks kepuasan dan export data.</p>
+        </div>
       </div>
 
       <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -196,11 +202,14 @@ export default function AdminLaporanPage() {
         )}
       </div>
 
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle>Filter & Export</CardTitle>
+      <Card className="border border-gray-100 dark:border-gray-800 shadow-md bg-white/60 dark:bg-gray-900/60 backdrop-blur-xl rounded-2xl overflow-hidden">
+        <CardHeader className="bg-gray-50/50 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-800 py-4">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Search className="size-4 text-gray-500" />
+            Filter & Export
+          </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-6">
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1">
               <Label>Periode</Label>
@@ -231,12 +240,12 @@ export default function AdminLaporanPage() {
               </Select>
             </div>
           </div>
-          <div className="mt-4 flex gap-2">
-            <Button className="gap-2" onClick={handleExportExcel} disabled={generating}>
+          <div className="mt-6 flex gap-2">
+            <Button className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-sm shadow-emerald-500/20" onClick={handleExportExcel} disabled={generating}>
               {generating ? <Loader2 className="size-4 animate-spin" /> : <FileSpreadsheet className="size-4" />}
               Export Excel
             </Button>
-            <Button variant="outline" className="gap-2" onClick={handleExportPdf}>
+            <Button variant="outline" className="gap-2 rounded-xl" onClick={handleExportPdf}>
               <FileText className="size-4" />
               Export PDF
             </Button>

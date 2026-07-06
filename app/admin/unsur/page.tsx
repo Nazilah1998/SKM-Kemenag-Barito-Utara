@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Plus, Pencil, Trash2, ListChecks, Loader2 } from 'lucide-react'
+import { Plus, Pencil, Trash2, ListChecks, Loader2, BarChart3 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -17,7 +17,7 @@ import {
   Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
 } from '@/components/ui/table'
 import {
-  Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose,
 } from '@/components/ui/dialog'
 import {
   AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogTitle,
@@ -63,6 +63,7 @@ export default function AdminUnsurPage() {
     setLoading(false)
   }
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { fetchUnsur() }, [])
 
   function openCreate() {
@@ -121,26 +122,32 @@ export default function AdminUnsurPage() {
   }
 
   return (
-    <div>
-      <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Unsur & Pertanyaan</h1>
-        <Button onClick={openCreate} className="gap-2">
+    <div className="space-y-6 max-w-7xl mx-auto">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-gray-900 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800">
+        <div>
+          <h1 className="text-2xl font-black tracking-tight text-gray-900 dark:text-white flex items-center gap-3">
+            <BarChart3 className="size-6 text-emerald-600" />
+            Unsur & Pertanyaan
+          </h1>
+          <p className="text-gray-500 dark:text-gray-400 mt-1 text-sm font-medium">Kelola unsur dan indikator pertanyaan untuk survei IPKP & IPAK.</p>
+        </div>
+        <Button onClick={openCreate} className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-sm shadow-emerald-500/20 w-full md:w-auto">
           <Plus className="size-4" />
           Tambah Unsur
         </Button>
       </div>
 
-      <Tabs value={filter} onValueChange={setFilter} className="mb-6">
-        <TabsList>
-          <TabsTrigger value="Semua">Semua</TabsTrigger>
-          <TabsTrigger value="IPKP">IPKP</TabsTrigger>
-          <TabsTrigger value="IPAK">IPAK</TabsTrigger>
+      <Tabs value={filter} onValueChange={setFilter} className="w-full">
+        <TabsList className="mb-4 bg-gray-100/80 dark:bg-gray-800/80 p-1 rounded-xl">
+          <TabsTrigger value="Semua" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">Semua</TabsTrigger>
+          <TabsTrigger value="IPKP" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">IPKP</TabsTrigger>
+          <TabsTrigger value="IPAK" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">IPAK</TabsTrigger>
         </TabsList>
       </Tabs>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Daftar Unsur Penilaian</CardTitle>
+      <Card className="border border-gray-100 dark:border-gray-800 shadow-lg shadow-gray-200/40 dark:shadow-black/20 bg-white/60 dark:bg-gray-900/60 backdrop-blur-xl rounded-2xl overflow-hidden">
+        <CardHeader className="bg-gray-50/50 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-800">
+          <CardTitle className="text-lg">Daftar Unsur Penilaian</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
           <Table>
@@ -230,6 +237,7 @@ export default function AdminUnsurPage() {
             </div>
             <div className="space-y-2">
               <Label>Tipe Index</Label>
+
               <Select value={watch('index_type')} onValueChange={(v) => v && setValue('index_type', v as 'IPKP' | 'IPAK')}>
                 <SelectTrigger className="w-full">
                   <SelectValue />

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState } from 'react'
 import { Download, ArrowLeft, Scan } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
@@ -11,10 +11,10 @@ import { Footer } from '@/components/shared/Footer'
 import { createClient } from '@/lib/supabase/client'
 import type { Service } from '@/types'
 import Link from 'next/link'
+import Image from 'next/image'
 
 export default function BarcodePage() {
   const { t } = useI18n()
-  const canvasRef = useRef<HTMLCanvasElement>(null)
   const [services, setServices] = useState<Service[]>([])
   const [selectedService, setSelectedService] = useState('')
   const [qrDataUrl, setQrDataUrl] = useState('')
@@ -38,14 +38,15 @@ export default function BarcodePage() {
     async function generateQR() {
       const QRCode = (await import('qrcode')).default
       let url = `${window.location.origin}/survei`
-      if (selectedService) {
+      if (selectedService && selectedService !== 'semua') {
         url += `?service=${selectedService}`
       }
       try {
         const dataUrl = await QRCode.toDataURL(url, {
           width: 400,
           margin: 2,
-          color: { dark: '#059669', light: '#ffffff' },
+          errorCorrectionLevel: 'H',
+          color: { dark: '#000000', light: '#ffffff' },
         })
         setQrDataUrl(dataUrl)
       } catch {
@@ -58,7 +59,7 @@ export default function BarcodePage() {
   function handleDownload() {
     if (!qrDataUrl) return
     const link = document.createElement('a')
-    link.download = `sikap-qr${selectedService ? '-' + selectedService : ''}.png`
+    link.download = `sikap-qr${selectedService && selectedService !== 'semua' ? '-' + selectedService : ''}.png`
     link.href = qrDataUrl
     link.click()
   }
@@ -93,7 +94,7 @@ export default function BarcodePage() {
                     <SelectValue placeholder="-- Semua Layanan --" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">Semua Layanan</SelectItem>
+                    <SelectItem value="semua">Semua Layanan</SelectItem>
                     {services.map((s) => (
                       <SelectItem key={s.id} value={s.slug}>{s.name}</SelectItem>
                     ))}
@@ -102,9 +103,14 @@ export default function BarcodePage() {
               </div>
 
               {qrDataUrl ? (
-                <div className="rounded-xl border bg-white p-4 shadow-sm">
+                <div className="rounded-xl border bg-white p-4 shadow-sm relative">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={qrDataUrl} alt="QR Code" className="size-64" />
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <div className="bg-white p-1 rounded-xl shadow-sm">
+                      <Image src="/arus.png" alt="ARUS Logo" width={50} height={50} className="object-contain" />
+                    </div>
+                  </div>
                 </div>
               ) : (
                 <div className="flex size-64 items-center justify-center rounded-xl border bg-gray-50">

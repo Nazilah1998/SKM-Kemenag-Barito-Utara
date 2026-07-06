@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Plus, Pencil, Trash2, Loader2, GripVertical } from 'lucide-react'
+import { Plus, Pencil, Trash2, Loader2, GripVertical, FileText } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -262,18 +262,24 @@ export default function AdminLayananPage() {
   }
 
   return (
-    <div>
-      <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Layanan</h1>
-        <Button onClick={openCreate} className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white">
+    <div className="space-y-6 max-w-7xl mx-auto">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-gray-900 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800">
+        <div>
+          <h1 className="text-2xl font-black tracking-tight text-gray-900 dark:text-white flex items-center gap-3">
+            <FileText className="size-6 text-emerald-600" />
+            Layanan Survei
+          </h1>
+          <p className="text-gray-500 dark:text-gray-400 mt-1 text-sm font-medium">Kelola daftar layanan yang dapat dinilai masyarakat.</p>
+        </div>
+        <Button onClick={openCreate} className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-sm shadow-emerald-500/20 w-full md:w-auto">
           <Plus className="size-4" />
           Tambah Layanan
         </Button>
       </div>
 
-      <Card className="border-0 shadow-lg shadow-gray-200/40 dark:shadow-black/20 bg-white/60 dark:bg-gray-900/60 backdrop-blur-xl">
-        <CardHeader>
-          <CardTitle>Daftar Layanan</CardTitle>
+      <Card className="border border-gray-100 dark:border-gray-800 shadow-lg shadow-gray-200/40 dark:shadow-black/20 bg-white/60 dark:bg-gray-900/60 backdrop-blur-xl rounded-2xl overflow-hidden">
+        <CardHeader className="bg-gray-50/50 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-800">
+          <CardTitle className="text-lg">Daftar Layanan</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
           <DndContext

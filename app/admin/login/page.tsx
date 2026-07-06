@@ -65,11 +65,43 @@ export default function AdminLoginPage() {
 
     const { data: { user } } = await supabase.auth.getUser()
 
-    if (!user || user.email !== ADMIN_EMAIL) {
-      await supabase.auth.signOut()
-      toast.error('Akses terbatas untuk admin')
+    if (!user) {
+      toast.error('Gagal memuat sesi pengguna')
       setLoading(false)
       return
+    }
+
+    // Verifikasi ketersediaan pengguna di database pusdatin terpusat
+    const { data: pusdatinUser, error: pusdatinError } = await supabase
+      .rpc('get_pusdatin_user', { email_address: data.email })
+
+    // Hanya lakukan pengecekan ketat jika bukan super admin
+    if (user.email !== ADMIN_EMAIL) {
+      if (pusdatinError || !pusdatinUser) {
+        await supabase.auth.signOut()
+        toast.error('Akun Anda tidak terdaftar di sistem terpusat.')
+        setLoading(false)
+        return
+      }
+
+      if (pusdatinUser.status !== 'active') {
+        await supabase.auth.signOut()
+        toast.error('Akun Anda sedang dinonaktifkan oleh Administrator.')
+        setLoading(false)
+        return
+      }
+
+      // Verifikasi akses spesifik untuk SIKAP / Survey
+      const hasSurveyAccess = pusdatinUser.app_permissions?.some(
+        (p: { app_id: string; role: string }) => p.app_id === 'survey-kemenag' && p.role !== 'none'
+      );
+
+      if (!hasSurveyAccess) {
+        await supabase.auth.signOut()
+        toast.error('Anda tidak memiliki hak akses untuk aplikasi SIKAP.')
+        setLoading(false)
+        return
+      }
     }
 
     router.replace('/admin')

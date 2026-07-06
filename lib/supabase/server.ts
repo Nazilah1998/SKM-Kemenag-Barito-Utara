@@ -8,6 +8,12 @@ export async function createServerSupabaseClient() {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
+      db: {
+        schema: process.env.NEXT_PUBLIC_PUSDATIN_SCHEMA || 'kemenag_survey',
+      },
+      cookieOptions: {
+        name: 'sb-survey-auth-token',
+      },
       cookies: {
         getAll() {
           return cookieStore.getAll()

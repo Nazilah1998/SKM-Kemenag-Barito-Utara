@@ -9,8 +9,8 @@ const jakarta = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "SIKAP - Survei Kepuasan Masyarakat",
-  description: "Sistem Informasi Kepuasan dan Aspirasi Publik - Kemenag Barito Utara",
+  title: "ARUS - Survei Kepuasan Masyarakat",
+  description: "Sistem Informasi Analisis Rekapitulasi Ulasan Survei Kepuasan Masyarakat - Kemenag Barito Utara",
   icons: [{ rel: "icon", url: "/kemenag.svg", type: "image/svg+xml" }],
 };
 

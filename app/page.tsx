@@ -40,6 +40,23 @@ export default function HomePage() {
     fetchData()
   }, [])
 
+  useEffect(() => {
+    const supabase = createClient()
+    const channel = supabase
+      .channel('home-realtime')
+      .on('postgres_changes', { event: 'INSERT', schema: 'kemenag_survey', table: 'responses' }, () => {
+        supabase.from('vw_index_summary').select('*').returns<IndexSummary[]>().then(({ data }) => {
+          if (data) setSummary(data)
+        })
+        supabase.from('responses').select('*', { count: 'exact', head: true }).then(({ count }) => {
+          if (count !== null) setTotalResponses(count)
+        })
+      })
+      .subscribe()
+
+    return () => { supabase.removeChannel(channel) }
+  }, [])
+
   const ipkp = summary.find((s) => s.index_type === 'IPKP')
   const ipak = summary.find((s) => s.index_type === 'IPAK')
 
@@ -53,6 +70,17 @@ export default function HomePage() {
     return colors[mutu] || 'text-gray-600 bg-gray-50 border-gray-200'
   }
 
+  const getCurrentPeriodText = () => {
+    const now = new Date()
+    const year = now.getFullYear()
+    const month = now.getMonth() + 1
+    let quarter = 'I'
+    if (month >= 4 && month <= 6) quarter = 'II'
+    else if (month >= 7 && month <= 9) quarter = 'III'
+    else if (month >= 10 && month <= 12) quarter = 'IV'
+    return `Triwulan ${quarter} Tahun ${year}`
+  }
+
   return (
     <>
       <PublicNavbar />
@@ -60,7 +88,7 @@ export default function HomePage() {
         <PageBanner
           title={t('home.hero_title')}
           description={t('home.hero_desc')}
-          eyebrow="Sistem Informasi Kepuasan dan Aspirasi Publik"
+          eyebrow={t('common.app_full')}
         >
           <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
             <Link href="/survei">
@@ -87,18 +115,18 @@ export default function HomePage() {
               transition={{ duration: 0.5, delay: 0.1 }}
             >
               <Card className="shadow-xl hover:shadow-2xl transition-all duration-300 border-t-4 border-t-emerald-500 bg-white/90 backdrop-blur-sm">
-                <CardHeader className="pb-2">
-                  <CardTitle className="flex items-center gap-2 text-lg">
-                    <BarChart3 className="size-5 text-emerald-600" />
-                    {t('home.ipkp_title')}
+                <CardHeader className="pb-2 text-center">
+                  <CardTitle className="flex flex-col items-center justify-center gap-2 text-lg">
+                    <BarChart3 className="size-6 text-emerald-600" />
+                    <span className="leading-tight">{t('home.ipkp_title')}</span>
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="flex flex-col items-center text-center">
                 {loading ? (
                   <div className="h-12 animate-pulse rounded bg-gray-200" />
                 ) : ipkp ? (
-                  <div>
-                    <div className="flex items-baseline gap-2">
+                  <div className="flex flex-col items-center">
+                    <div className="flex items-center justify-center gap-2">
                       <span className="text-3xl font-bold">{ipkp.nilai_konversi.toFixed(2)}</span>
                       <Badge className={getGradeColor(ipkp.mutu)}>
                         {ipkp.mutu}
@@ -109,7 +137,13 @@ export default function HomePage() {
                     </p>
                   </div>
                 ) : (
-                  <p className="text-sm text-muted-foreground">{t('results.no_data')}</p>
+                  <div className="flex flex-col items-center">
+                    <div className="flex items-center justify-center gap-2">
+                      <span className="text-3xl font-bold text-gray-400">0.00</span>
+                      <Badge className="text-gray-500 bg-gray-100 border-gray-200">-</Badge>
+                    </div>
+                    <p className="mt-1 text-sm text-muted-foreground">Belum ada survei</p>
+                  </div>
                 )}
                 </CardContent>
               </Card>
@@ -121,18 +155,18 @@ export default function HomePage() {
               transition={{ duration: 0.5, delay: 0.2 }}
             >
               <Card className="shadow-xl hover:shadow-2xl transition-all duration-300 border-t-4 border-t-blue-500 bg-white/90 backdrop-blur-sm">
-                <CardHeader className="pb-2">
-                  <CardTitle className="flex items-center gap-2 text-lg">
-                    <BarChart3 className="size-5 text-blue-600" />
-                    {t('home.ipak_title')}
+                <CardHeader className="pb-2 text-center">
+                  <CardTitle className="flex flex-col items-center justify-center gap-2 text-lg">
+                    <BarChart3 className="size-6 text-blue-600" />
+                    <span className="leading-tight">{t('home.ipak_title')}</span>
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="flex flex-col items-center text-center">
                 {loading ? (
                   <div className="h-12 animate-pulse rounded bg-gray-200" />
                 ) : ipak ? (
-                  <div>
-                    <div className="flex items-baseline gap-2">
+                  <div className="flex flex-col items-center">
+                    <div className="flex items-center justify-center gap-2">
                       <span className="text-3xl font-bold">{ipak.nilai_konversi.toFixed(2)}</span>
                       <Badge className={getGradeColor(ipak.mutu)}>
                         {ipak.mutu}
@@ -143,7 +177,13 @@ export default function HomePage() {
                     </p>
                   </div>
                 ) : (
-                  <p className="text-sm text-muted-foreground">{t('results.no_data')}</p>
+                  <div className="flex flex-col items-center">
+                    <div className="flex items-center justify-center gap-2">
+                      <span className="text-3xl font-bold text-gray-400">0.00</span>
+                      <Badge className="text-gray-500 bg-gray-100 border-gray-200">-</Badge>
+                    </div>
+                    <p className="mt-1 text-sm text-muted-foreground">Belum ada survei</p>
+                  </div>
                 )}
                 </CardContent>
               </Card>
@@ -155,13 +195,16 @@ export default function HomePage() {
               transition={{ duration: 0.5, delay: 0.3 }}
             >
               <Card className="shadow-xl hover:shadow-2xl transition-all duration-300 border-t-4 border-t-purple-500 bg-white/90 backdrop-blur-sm h-full">
-                <CardHeader className="pb-2">
-                  <CardTitle className="flex items-center gap-2 text-lg">
-                    <Users className="size-5 text-purple-600" />
-                    {t('home.total_responses')}
+                <CardHeader className="pb-2 text-center">
+                  <CardTitle className="flex flex-col items-center justify-center gap-2 text-lg">
+                    <Users className="size-6 text-purple-600" />
+                    <div>
+                      <div className="leading-tight">{t('home.total_responses')}</div>
+                      <div className="text-xs font-normal text-muted-foreground mt-0.5">{getCurrentPeriodText()}</div>
+                    </div>
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="flex flex-col justify-center">
+                <CardContent className="flex flex-col items-center justify-center text-center">
                 {loading ? (
                   <div className="h-12 animate-pulse rounded bg-gray-200" />
                 ) : (

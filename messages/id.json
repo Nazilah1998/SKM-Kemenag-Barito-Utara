@@ -1,7 +1,7 @@
 {
   "common": {
-    "app_name": "SIKAP",
-    "app_full": "Sistem Informasi Kepuasan dan Aspirasi Publik",
+    "app_name": "SI-ARUS",
+    "app_full": "Sistem Informasi Analisis Rekapitulasi Ulasan Survei Kepuasan Masyarakat",
     "subtitle": "Kantor Kementerian Agama Kabupaten Barito Utara",
     "loading": "Memuat...",
     "submit": "Kirim",
@@ -33,7 +33,7 @@
     "logout": "Keluar"
   },
   "home": {
-    "hero_title": "Selamat Datang di SIKAP",
+    "hero_title": "Selamat Datang di SI-ARUS",
     "hero_desc": "Survei Kepuasan Masyarakat terhadap Layanan PTSP Kantor Kementerian Agama Kabupaten Barito Utara",
     "start_survey": "Isi Survei Sekarang",
     "view_results": "Lihat Hasil Survei",
@@ -51,8 +51,8 @@
     "name": "Nama Lengkap",
     "contact": "Kontak (HP/Email)",
     "demographic_info": "Informasi Responden",
-    "ipkp_section": "Penilaian Kualitas Pelayanan (IPKP)",
-    "ipak_section": "Penilaian Anti Korupsi (IPAK)",
+    "ipkp_section": "Lembar Kuisioner Indeks Penilaian Kualitas Pelayanan (IPKP)",
+    "ipak_section": "Lembar Kuisioner Indeks Penilaian Anti Korupsi (IPAK)",
     "rating_1": "Sangat Tidak Baik",
     "rating_2": "Tidak Baik",
     "rating_3": "Baik",

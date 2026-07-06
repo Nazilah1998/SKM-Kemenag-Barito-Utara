@@ -1,7 +1,7 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
-import { Eye, Trash2, Loader2, Search, X } from 'lucide-react'
+import { useEffect, useState, useCallback, useMemo } from 'react'
+import { Eye, Trash2, Loader2, Search, X, ClipboardList } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -40,20 +40,20 @@ export default function AdminResponPage() {
   const [filterDateFrom, setFilterDateFrom] = useState('')
   const [filterDateTo, setFilterDateTo] = useState('')
 
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), [])
 
-  async function fetchInitial() {
+  const fetchInitial = useCallback(async () => {
     const [servicesRes, periodsRes] = await Promise.all([
       supabase.from('services').select('*').order('sort_order'),
       supabase.from('survey_periods').select('*').order('start_date', { ascending: false }),
     ])
     if (servicesRes.data) setServices(servicesRes.data as Service[])
     if (periodsRes.data) setPeriods(periodsRes.data as SurveyPeriod[])
-  }
+  }, [supabase])
 
   const fetchResponses = useCallback(async () => {
     setLoading(true)
-    let query = supabase.from('responses').select('*, service(*), period(*)').order('submitted_at', { ascending: false })
+    let query = supabase.from('responses').select('*, services(*), survey_periods(*)').order('submitted_at', { ascending: false })
 
     if (filterService) query = query.eq('service_id', filterService)
     if (filterPeriod) query = query.eq('period_id', filterPeriod)
@@ -63,10 +63,17 @@ export default function AdminResponPage() {
     const { data } = await query
     if (data) setResponses(data as unknown as Response[])
     setLoading(false)
-  }, [filterService, filterPeriod, filterDateFrom, filterDateTo])
+  }, [filterService, filterPeriod, filterDateFrom, filterDateTo, supabase])
 
-  useEffect(() => { fetchInitial() }, [])
-  useEffect(() => { fetchResponses() }, [fetchResponses])
+  useEffect(() => {
+    const init = async () => { await fetchInitial() }
+    init()
+  }, [fetchInitial])
+  
+  useEffect(() => {
+    const fetch = async () => { await fetchResponses() }
+    fetch()
+  }, [fetchResponses])
 
   async function openDetail(response: Response) {
     setSelectedResponse(response)
@@ -120,16 +127,25 @@ export default function AdminResponPage() {
   }
 
   return (
-    <div>
-      <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Data Respon</h1>
+    <div className="space-y-6 max-w-7xl mx-auto">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-gray-900 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800">
+        <div>
+          <h1 className="text-2xl font-black tracking-tight text-gray-900 dark:text-white flex items-center gap-3">
+            <ClipboardList className="size-6 text-emerald-600" />
+            Data Respon
+          </h1>
+          <p className="text-gray-500 dark:text-gray-400 mt-1 text-sm font-medium">Lihat dan saring seluruh data jawaban survei dari masyarakat.</p>
+        </div>
       </div>
 
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle>Filter</CardTitle>
+      <Card className="border border-gray-100 dark:border-gray-800 shadow-md bg-white/60 dark:bg-gray-900/60 backdrop-blur-xl rounded-2xl overflow-hidden">
+        <CardHeader className="bg-gray-50/50 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-800 py-4">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Search className="size-4 text-gray-500" />
+            Filter Data
+          </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-6">
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <div className="space-y-1">
               <Label>Layanan</Label>
@@ -181,9 +197,9 @@ export default function AdminResponPage() {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Daftar Respon</CardTitle>
+      <Card className="border border-gray-100 dark:border-gray-800 shadow-lg shadow-gray-200/40 dark:shadow-black/20 bg-white/60 dark:bg-gray-900/60 backdrop-blur-xl rounded-2xl overflow-hidden">
+        <CardHeader className="bg-gray-50/50 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-800">
+          <CardTitle className="text-lg">Daftar Respon</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
           <Table>
@@ -199,59 +215,67 @@ export default function AdminResponPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {responses.map((r) => (
-                <TableRow key={r.id}>
-                  <TableCell className="text-muted-foreground whitespace-nowrap">
-                    {new Date(r.submitted_at).toLocaleDateString('id-ID', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                  </TableCell>
-                  <TableCell className="font-medium">{r.service?.name || '-'}</TableCell>
-                  <TableCell>
-                    {r.is_anonymous ? <Badge variant="secondary">Anonim</Badge> : <Badge variant="default">Teridentifikasi</Badge>}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">{r.is_anonymous ? '-' : r.respondent_name || '-'}</TableCell>
-                  <TableCell>
-                    <Badge variant="outline">{r.locale?.toUpperCase() || '-'}</Badge>
-                  </TableCell>
-                  <TableCell>
-                    {r.turnstile_verified ? (
-                      <Badge variant="default" className="bg-emerald-600">Terverifikasi</Badge>
-                    ) : (
-                      <Badge variant="secondary">Tidak</Badge>
-                    )}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-1">
-                      <Button variant="ghost" size="icon-sm" onClick={() => openDetail(r)}>
-                        <Eye className="size-4" />
-                      </Button>
-                      <AlertDialog open={deleteDialog?.id === r.id} onOpenChange={(open) => { if (!open) setDeleteDialog(null) }}>
-                        <AlertDialogTrigger render={<Button variant="ghost" size="icon-sm" className="text-destructive"><Trash2 className="size-4" /></Button>} onClick={() => setDeleteDialog(r)} />
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Hapus Respon</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              Apakah Anda yakin ingin menghapus respon ini? Data jawaban terkait juga akan dihapus.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Batal</AlertDialogCancel>
-                            <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/80" onClick={confirmDelete} disabled={deleting}>
-                              {deleting ? <Loader2 className="size-4 animate-spin" /> : null}
-                              Hapus
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-              {responses.length === 0 && (
+              {loading ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="py-8 text-center text-muted-foreground">
-                    Belum ada data respon
+                  <TableCell colSpan={7} className="text-center py-10 text-muted-foreground">
+                    <Loader2 className="size-6 animate-spin mx-auto mb-2" />
+                    Memuat data respon...
                   </TableCell>
                 </TableRow>
+              ) : responses.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center py-10 text-muted-foreground">
+                    Tidak ada data respon ditemukan.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                responses.map((r) => (
+                  <TableRow key={r.id}>
+                    <TableCell className="text-muted-foreground whitespace-nowrap">
+                      {new Date(r.submitted_at).toLocaleDateString('id-ID', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                    </TableCell>
+                    <TableCell className="font-medium">{(r as unknown as Record<string, {name?: string}>).services?.name || '-'}</TableCell>
+                    <TableCell>
+                      {r.is_anonymous ? <Badge variant="secondary">Anonim</Badge> : <Badge variant="default">Teridentifikasi</Badge>}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">{r.is_anonymous ? '-' : r.respondent_name || '-'}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline">{r.locale?.toUpperCase() || '-'}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      {r.turnstile_verified ? (
+                        <Badge variant="default" className="bg-emerald-600">Terverifikasi</Badge>
+                      ) : (
+                        <Badge variant="secondary">Tidak</Badge>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-1">
+                        <Button variant="ghost" size="icon-sm" onClick={() => openDetail(r)}>
+                          <Eye className="size-4" />
+                        </Button>
+                        <AlertDialog open={deleteDialog?.id === r.id} onOpenChange={(open) => { if (!open) setDeleteDialog(null) }}>
+                        <AlertDialogTrigger render={<Button variant="ghost" size="icon-sm" className="text-destructive"><Trash2 className="size-4" /></Button>} onClick={() => setDeleteDialog(r)} />
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Hapus Respon?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Apakah Anda yakin ingin menghapus respon ini? Aksi ini tidak dapat dibatalkan.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Batal</AlertDialogCancel>
+                              <AlertDialogAction className="bg-destructive hover:bg-destructive/90" onClick={confirmDelete}>
+                                {deleting ? <Loader2 className="size-4 animate-spin mr-2" /> : <Trash2 className="size-4 mr-2" />}
+                                Hapus
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
               )}
             </TableBody>
           </Table>

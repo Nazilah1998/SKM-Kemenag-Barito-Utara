@@ -1,10 +1,10 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { useForm } from 'react-hook-form'
+import React, { useEffect, useState, Fragment } from 'react'
+import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Plus, Pencil, Trash2, GripVertical, Loader2 } from 'lucide-react'
+import { Plus, Pencil, Trash2, Loader2, GripVertical, Users } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -15,7 +15,7 @@ import {
   Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
 } from '@/components/ui/table'
 import {
-  Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose,
 } from '@/components/ui/dialog'
 import {
   AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogTitle,
@@ -52,7 +52,7 @@ export default function AdminDemografiPage() {
 
   const supabase = createClient()
 
-  const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<FieldForm>({
+  const { register, handleSubmit, reset, control, formState: { errors } } = useForm<FieldForm>({
     resolver: zodResolver(fieldSchema),
     defaultValues: {
       field_key: '', label_id: '', label_en: '', field_type: 'text',
@@ -66,7 +66,18 @@ export default function AdminDemografiPage() {
     setLoading(false)
   }
 
-  useEffect(() => { fetchFields() }, [])
+  useEffect(() => {
+    let ignore = false
+    ;(async () => {
+      const { data } = await supabase.from('demographic_fields').select('*, demographic_options(*)').order('sort_order')
+      if (!ignore) {
+        if (data) setFields(data as unknown as DemographicField[])
+        setLoading(false)
+      }
+    })()
+    return () => { ignore = true }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   function openCreate() {
     setEditing(null)
@@ -163,18 +174,24 @@ export default function AdminDemografiPage() {
   }
 
   return (
-    <div>
-      <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Field Demografi</h1>
-        <Button onClick={openCreate} className="gap-2">
+    <div className="space-y-6 max-w-7xl mx-auto">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-gray-900 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800">
+        <div>
+          <h1 className="text-2xl font-black tracking-tight text-gray-900 dark:text-white flex items-center gap-3">
+            <Users className="size-6 text-emerald-600" />
+            Field Demografi
+          </h1>
+          <p className="text-gray-500 dark:text-gray-400 mt-1 text-sm font-medium">Kelola pertanyaan demografi responden seperti usia, pendidikan, dan pekerjaan.</p>
+        </div>
+        <Button onClick={openCreate} className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-sm shadow-emerald-500/20 w-full md:w-auto">
           <Plus className="size-4" />
           Tambah Field
         </Button>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Daftar Field Demografi</CardTitle>
+      <Card className="border border-gray-100 dark:border-gray-800 shadow-lg shadow-gray-200/40 dark:shadow-black/20 bg-white/60 dark:bg-gray-900/60 backdrop-blur-xl rounded-2xl overflow-hidden">
+        <CardHeader className="bg-gray-50/50 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-800">
+          <CardTitle className="text-lg">Daftar Field Demografi</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
           <Table>
@@ -191,8 +208,8 @@ export default function AdminDemografiPage() {
             </TableHeader>
             <TableBody>
               {fields.map((f) => (
-                <>
-                  <TableRow key={f.id}>
+                <Fragment key={f.id}>
+                  <TableRow>
                     <TableCell className="font-mono text-sm">{f.field_key}</TableCell>
                     <TableCell>{f.label_id}</TableCell>
                     <TableCell>
@@ -269,7 +286,7 @@ export default function AdminDemografiPage() {
                       </TableCell>
                     </TableRow>
                   )}
-                </>
+                </Fragment>
               ))}
               {fields.length === 0 && (
                 <TableRow>
@@ -311,24 +328,42 @@ export default function AdminDemografiPage() {
             </div>
             <div className="space-y-2">
               <Label>Tipe Field</Label>
-              <Select value={watch('field_type')} onValueChange={(v) => v && setValue('field_type', v as 'select' | 'text' | 'number')}>
-                <SelectTrigger className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="text">Text</SelectItem>
-                  <SelectItem value="number">Number</SelectItem>
-                  <SelectItem value="select">Select (Pilihan)</SelectItem>
-                </SelectContent>
-              </Select>
+              <Controller
+                name="field_type"
+                control={control}
+                render={({ field }) => (
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="text">Text</SelectItem>
+                      <SelectItem value="number">Number</SelectItem>
+                      <SelectItem value="select">Select (Pilihan)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+              />
             </div>
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
-                <Switch id="is_required" checked={watch('is_required')} onCheckedChange={(v) => setValue('is_required', v)} />
+                <Controller
+                  name="is_required"
+                  control={control}
+                  render={({ field }) => (
+                    <Switch id="is_required" checked={field.value} onCheckedChange={field.onChange} />
+                  )}
+                />
                 <Label htmlFor="is_required">Wajib diisi</Label>
               </div>
               <div className="flex items-center gap-2">
-                <Switch id="is_active" checked={watch('is_active')} onCheckedChange={(v) => setValue('is_active', v)} />
+                <Controller
+                  name="is_active"
+                  control={control}
+                  render={({ field }) => (
+                    <Switch id="is_active" checked={field.value} onCheckedChange={field.onChange} />
+                  )}
+                />
                 <Label htmlFor="is_active">Aktif</Label>
               </div>
               <div className="ml-auto space-y-1">

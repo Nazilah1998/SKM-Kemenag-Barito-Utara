@@ -17,7 +17,7 @@ import {
   Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
 } from '@/components/ui/table'
 import {
-  Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose,
 } from '@/components/ui/dialog'
 import {
   AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogTitle,
@@ -81,7 +81,9 @@ export default function AdminPertanyaanPage() {
     setLoading(false)
   }
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { fetchInitial() }, [])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { setLoading(true); fetchQuestions() }, [filterUnsur])
 
   function openCreate() {
@@ -275,6 +277,7 @@ export default function AdminPertanyaanPage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Tipe Input</Label>
+
                 <Select value={watch('input_type')} onValueChange={(v) => v && setValue('input_type', v as 'star_rating')}>
                   <SelectTrigger className="w-full">
                     <SelectValue />

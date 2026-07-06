@@ -5,18 +5,17 @@ import { useForm, Controller, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Turnstile } from '@marsidev/react-turnstile'
-import { ChevronLeft, ChevronRight, Send, Loader2 } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Send, Loader2, Info, User, Phone, ListTodo, ShieldAlert, MapPin, Star } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Textarea } from '@/components/ui/textarea'
 import { useI18n } from '@/components/shared/I18nProvider'
 import { StarRating } from '@/components/shared/StarRating'
 import { SurveyThankYou } from '@/components/shared/SurveyThankYou'
-import PageBanner from '@/components/shared/PageBanner'
 import { PublicNavbar } from '@/components/shared/PublicNavbar'
 import { Footer } from '@/components/shared/Footer'
 import { createClient } from '@/lib/supabase/client'
@@ -28,6 +27,11 @@ const formSchema = z.object({
   is_anonymous: z.boolean(),
   respondent_name: z.string().optional(),
   respondent_contact: z.string().optional(),
+  respondent_address: z.string().optional(),
+}).refine(data => data.is_anonymous || (data.respondent_name && /^[a-zA-Z\s.,'-]+$/.test(data.respondent_name)), {
+  message: "Nama wajib diisi dengan huruf dan tanda baca umum", path: ["respondent_name"]
+}).refine(data => data.is_anonymous || (data.respondent_contact && /^[0-9]{10,13}$/.test(data.respondent_contact)), {
+  message: "Kontak wajib 10-13 digit angka", path: ["respondent_contact"]
 })
 
 type FormValues = z.infer<typeof formSchema>
@@ -35,60 +39,102 @@ type FormValues = z.infer<typeof formSchema>
 export default function SurveiPage() {
   const { t, locale } = useI18n()
   const [step, setStep] = useState(0)
+  const [direction, setDirection] = useState(1)
   const [services, setServices] = useState<Service[]>([])
   const [period, setPeriod] = useState<SurveyPeriod | null>(null)
   const [ipkpUnsur, setIpkpUnsur] = useState<UnsurWithQuestions[]>([])
   const [ipakUnsur, setIpakUnsur] = useState<UnsurWithQuestions[]>([])
   const [demographicFields, setDemographicFields] = useState<DemographicField[]>([])
-  const [turnstileSiteKey, setTurnstileSiteKey] = useState('')
-  const [turnstileToken, setTurnstileToken] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
+  const [submitReady, setSubmitReady] = useState(false)
   const [loading, setLoading] = useState(true)
   const [answers, setAnswers] = useState<Record<string, number>>({})
   const [demographics, setDemographics] = useState<Record<string, string>>({})
+  const [ipkpFeedback, setIpkpFeedback] = useState('')
+  const [ipakFeedback, setIpakFeedback] = useState('')
 
-  const { control, handleSubmit, formState: { errors } } = useForm<FormValues>({
+  const { control, handleSubmit, setValue, formState: { errors } } = useForm<FormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues: { service_id: '', is_anonymous: true, respondent_name: '', respondent_contact: '' },
+    defaultValues: { service_id: '', is_anonymous: false, respondent_name: '', respondent_contact: '', respondent_address: '' },
   })
 
   const isAnonymous = useWatch({ control, name: 'is_anonymous' })
   const selectedServiceId = useWatch({ control, name: 'service_id' })
+  const respondentName = useWatch({ control, name: 'respondent_name' }) || ''
+  const respondentContact = useWatch({ control, name: 'respondent_contact' }) || ''
+  const respondentAddress = useWatch({ control, name: 'respondent_address' }) || ''
 
   useEffect(() => {
     async function fetchData() {
-      const supabase = createClient()
+      try {
+        const supabase = createClient()
 
-      const [servicesRes, periodsRes, unsurRes, fieldsRes, settingsRes] = await Promise.all([
-        supabase.from('services').select('*').eq('is_active', true).order('sort_order'),
-        supabase.from('survey_periods').select('*').eq('is_active', true).single(),
-        supabase.from('unsur').select('*, questions(*)').eq('is_active', true).order('sort_order'),
-        supabase.from('demographic_fields').select('*, demographic_options(*)').eq('is_active', true).order('sort_order'),
-        supabase.from('app_settings').select('value').eq('key', 'turnstile_site_key').single(),
-      ])
+        const [servicesRes, periodsRes, unsurRes, fieldsRes] = await Promise.all([
+          supabase.from('services').select('*').eq('is_active', true).order('sort_order'),
+          supabase.from('survey_periods').select('*').eq('is_active', true).maybeSingle(),
+          supabase.from('unsur').select('*, questions(*)').eq('is_active', true).order('sort_order'),
+          supabase.from('demographic_fields').select('*, demographic_options(*)').eq('is_active', true).order('sort_order'),
+        ])
 
-      if (servicesRes.data) setServices(servicesRes.data as Service[])
-      if (periodsRes.data) setPeriod(periodsRes.data as SurveyPeriod)
-      if (settingsRes.data) setTurnstileSiteKey(settingsRes.data.value)
+        if (servicesRes.error) console.error('services error', servicesRes.error)
+        if (periodsRes.error) console.error('periods error', periodsRes.error)
+        if (unsurRes.error) console.error('unsur error', unsurRes.error)
+        if (fieldsRes.error) console.error('fields error', fieldsRes.error)
 
-      const unsurData = (unsurRes.data || []) as unknown as UnsurWithQuestions[]
-      setIpkpUnsur(unsurData.filter((u) => u.index_type === 'IPKP'))
-      setIpakUnsur(unsurData.filter((u) => u.index_type === 'IPAK'))
+        if (servicesRes.data) {
+          const s = servicesRes.data as Service[]
+          setServices(s)
+          const params = new URLSearchParams(window.location.search)
+          const sid = params.get('service')
+          const foundService = sid ? s.find((x) => x.slug === sid) : null
+          if (foundService) {
+            setValue('service_id', foundService.id)
+          }
+        }
+        if (periodsRes.data) setPeriod(periodsRes.data as SurveyPeriod)
 
-      if (fieldsRes.data) setDemographicFields(fieldsRes.data as DemographicField[])
+        const unsurData = (unsurRes.data || []) as unknown as UnsurWithQuestions[]
+        setIpkpUnsur(unsurData.filter((u) => u.index_type === 'IPKP'))
+        setIpakUnsur(unsurData.filter((u) => u.index_type === 'IPAK'))
 
-      setLoading(false)
+        if (fieldsRes.data) setDemographicFields(fieldsRes.data as DemographicField[])
+      } catch (err) {
+        console.error('fetchData error:', err)
+        toast.error('Gagal mengambil data survei')
+      } finally {
+        setLoading(false)
+      }
     }
     fetchData()
-  }, [])
+  }, [setValue])
 
   const allQuestions = [...ipkpUnsur.flatMap((u) => u.questions), ...ipakUnsur.flatMap((u) => u.questions)]
   const totalSteps = 5
 
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' })
+    if (step === totalSteps - 1) {
+      const timer = setTimeout(() => setSubmitReady(true), 500)
+      return () => clearTimeout(timer)
+    }
+  }, [step, totalSteps])
+
   const canProceed = useCallback(() => {
-    if (step === 0) return !!selectedServiceId
-    if (step === 1) return true
+    if (step === 0) {
+      if (!selectedServiceId) return false
+      if (!isAnonymous) {
+        if (!respondentName || !respondentContact || !respondentAddress) return false
+        if (!/^[a-zA-Z\s.,'-]+$/.test(respondentName)) return false
+        if (!/^[0-9]{10,13}$/.test(respondentContact)) return false
+        if (respondentAddress.trim().length < 5) return false
+      }
+      return true
+    }
+    if (step === 1) {
+      const requiredFields = demographicFields.filter(f => f.is_required)
+      return requiredFields.every(f => !!demographics[f.id])
+    }
     if (step === 2) {
       const ipkpQuestions = ipkpUnsur.flatMap((u) => u.questions)
       return ipkpQuestions.every((q) => answers[q.id] && answers[q.id] > 0)
@@ -97,36 +143,86 @@ export default function SurveiPage() {
       const ipakQuestions = ipakUnsur.flatMap((u) => u.questions)
       return ipakQuestions.every((q) => answers[q.id] && answers[q.id] > 0)
     }
-    if (step === 4) return !!turnstileToken
+    if (step === 4) return true
     return true
-  }, [step, selectedServiceId, answers, ipkpUnsur, ipakUnsur, turnstileToken])
+  }, [step, selectedServiceId, isAnonymous, respondentName, respondentContact, respondentAddress, answers, demographics, demographicFields, ipkpUnsur, ipakUnsur])
+
+  function canStepProceed(s: number): boolean {
+    if (s === 0) {
+      if (!selectedServiceId) return false
+      if (!isAnonymous) {
+        if (!respondentName || !respondentContact || !respondentAddress) return false
+        if (!/^[a-zA-Z\s.,'-]+$/.test(respondentName)) return false
+        if (!/^[0-9]{10,13}$/.test(respondentContact)) return false
+        if (respondentAddress.trim().length < 5) return false
+      }
+      return true
+    }
+    if (s === 1) {
+      const required = demographicFields.filter(f => f.is_required)
+      return required.every(f => !!demographics[f.id])
+    }
+    if (s === 2) {
+      const qs = ipkpUnsur.flatMap(u => u.questions)
+      return qs.every(q => answers[q.id] && answers[q.id] > 0)
+    }
+    if (s === 3) {
+      const qs = ipakUnsur.flatMap(u => u.questions)
+      return qs.every(q => answers[q.id] && answers[q.id] > 0)
+    }
+    if (s === 4) return true
+    return true
+  }
+
+  function goToStep(next: number) {
+    setDirection(next > step ? 1 : -1)
+    setSubmitReady(false)
+    setStep(next)
+  }
+
+  const getCurrentPeriodText = () => {
+    const now = new Date()
+    const year = now.getFullYear()
+    const month = now.getMonth() + 1
+    
+    let triwulan = ''
+    if (month >= 1 && month <= 3) triwulan = 'Triwulan I'
+    else if (month >= 4 && month <= 6) triwulan = 'Triwulan II'
+    else if (month >= 7 && month <= 9) triwulan = 'Triwulan III'
+    else triwulan = 'Triwulan IV'
+    
+    return `${triwulan} Tahun ${year}`
+  }
 
   async function onSubmit(formData: FormValues) {
     setSubmitting(true)
     try {
       const supabase = createClient()
 
-      const { data: responseData, error: responseError } = await supabase
+      const responseId = crypto.randomUUID()
+
+      const { error: responseError } = await supabase
         .from('responses')
         .insert({
+          id: responseId,
           service_id: formData.service_id,
           period_id: period?.id,
           is_anonymous: formData.is_anonymous,
-          respondent_name: formData.is_anonymous ? null : formData.respondent_name || null,
-          respondent_contact: formData.is_anonymous ? null : formData.respondent_contact || null,
+          respondent_name: formData.is_anonymous ? 'Anonim' : formData.respondent_name,
+          respondent_contact: formData.is_anonymous ? '08xxxxxxxxxx' : formData.respondent_contact,
+          respondent_address: formData.is_anonymous ? 'Anonim' : formData.respondent_address,
+          ipkp_feedback: ipkpFeedback.trim() || null,
+          ipak_feedback: ipakFeedback.trim() || null,
           locale,
           turnstile_verified: true,
         })
-        .select('id')
-        .single()
 
-      if (responseError || !responseData) {
+      if (responseError) {
+        console.error('[onSubmit] response insert error:', responseError)
         toast.error(t('survey.error_submit'))
         setSubmitting(false)
         return
       }
-
-      const responseId = responseData.id
 
       const demoEntries = Object.entries(demographics).map(([field_id, value]) => ({
         response_id: responseId,
@@ -135,7 +231,13 @@ export default function SurveiPage() {
       }))
 
       if (demoEntries.length > 0) {
-        await supabase.from('response_demographics').insert(demoEntries)
+        const { error: demoError } = await supabase.from('response_demographics').insert(demoEntries)
+        if (demoError) {
+          console.error('[onSubmit] demo insert error:', demoError)
+          toast.error('Gagal mengirim data demografi. Silakan coba lagi.')
+          setSubmitting(false)
+          return
+        }
       }
 
       const answerEntries = Object.entries(answers).map(([questionId, ratingValue]) => {
@@ -149,7 +251,13 @@ export default function SurveiPage() {
       })
 
       if (answerEntries.length > 0) {
-        await supabase.from('response_answers').insert(answerEntries)
+        const { error: answersError } = await supabase.from('response_answers').insert(answerEntries)
+        if (answersError) {
+          console.error('[onSubmit] answers insert error:', answersError)
+          toast.error('Gagal mengirim jawaban survei. Silakan coba lagi.')
+          setSubmitting(false)
+          return
+        }
       }
 
       setSubmitted(true)
@@ -182,46 +290,65 @@ export default function SurveiPage() {
   return (
     <>
       <PublicNavbar />
-      <main className="flex-1 bg-gray-50/50">
-        <PageBanner
-          title={t('survey.title')}
-          description={period ? `${period.label} (${period.start_date} - ${period.end_date})` : 'Memuat data...'}
-          eyebrow="Formulir Survei"
-          breadcrumb={[
-            { label: 'Beranda', href: '/' },
-            { label: 'Survei' }
-          ]}
-        />
-        
-        <div className="relative z-10 mx-auto w-full px-6 sm:px-10 lg:px-16 xl:px-20 -mt-8 pb-16">
-          <div className="mb-8 flex items-center justify-center gap-2 bg-white/70 backdrop-blur-md border border-white/40 p-4 rounded-2xl shadow-lg ring-1 ring-black/5">
-            {Array.from({ length: totalSteps }, (_, i) => (
-              <div key={i} className="flex items-center gap-2">
-                <div
-                  className={`flex size-8 items-center justify-center rounded-full text-sm font-medium transition-colors ${
-                    i <= step ? 'bg-emerald-600 text-white shadow-md' : 'bg-gray-100 text-gray-400'
-                  }`}
-                >
-                  {i + 1}
+      <main className="flex-1 bg-white">
+        <div className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+          <div className="mb-6 sm:mb-8">
+            <h1 className="text-lg sm:text-2xl font-bold text-gray-900 mb-4 leading-snug flex items-start sm:items-center gap-2.5">
+              <ListTodo className="size-5 sm:size-6 text-emerald-600 shrink-0 mt-1 sm:mt-0" />
+              <span>Kuesioner Survei Indeks Persepsi Kualitas Pelayanan (IPKP) dan Indeks Persepsi Anti Korupsi (IPAK) {getCurrentPeriodText()}</span>
+            </h1>
+            <div className="bg-[#eef2fa] border border-blue-200 rounded-lg p-3 sm:p-5 text-blue-900 shadow-sm flex items-start gap-2.5 sm:gap-3">
+              <Info className="size-5 sm:size-6 text-blue-600 shrink-0 mt-0.5" />
+              <p className="text-xs sm:text-base leading-relaxed">
+                Untuk mengisi <strong>SURVEI INDEKS PERSEPSI KUALITAS PELAYANAN (IPKP), {getCurrentPeriodText()}</strong><br className="hidden sm:block"/>
+                Pada <strong>KANTOR KEMENTERIAN AGAMA KABUPATEN BARITO UTARA</strong>, silakan lengkapi formulir di bawah ini
+              </p>
+            </div>
+          </div>
+          
+          <div className="mb-6 sm:mb-8 flex items-center justify-center gap-1 sm:gap-2 bg-gray-50 border border-gray-100 p-3 sm:p-4 rounded-xl overflow-x-auto">
+            {Array.from({ length: totalSteps }, (_, i) => {
+              const isCompleted = canStepProceed(i)
+              const isReachable = i <= step || Array.from({ length: i }, (_, j) => j).every(j => canStepProceed(j))
+              return (
+                <div key={i} className="flex items-center gap-1 sm:gap-2">
+                  <button
+                    type="button"
+                    onClick={() => isReachable && goToStep(i)}
+                    className={`flex size-7 sm:size-8 items-center justify-center rounded-full text-xs sm:text-sm font-medium transition-all duration-200 shrink-0 ${
+                      i === step
+                        ? 'bg-emerald-600 text-white shadow-md ring-2 ring-emerald-300'
+                        : i < step && isCompleted
+                        ? 'bg-emerald-500 text-white cursor-pointer hover:bg-emerald-600'
+                        : isReachable
+                        ? 'bg-gray-200 text-gray-600 cursor-pointer hover:bg-gray-300'
+                        : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                    }`}
+                    disabled={!isReachable}
+                    title={!isReachable ? 'Selesaikan langkah sebelumnya terlebih dahulu' : ''}
+                  >
+                    {i + 1}
+                  </button>
+                  {i < totalSteps - 1 && (
+                    <div className={`h-0.5 w-3 sm:w-8 transition-colors shrink-0 ${i < step ? 'bg-emerald-600' : 'bg-gray-200'}`} />
+                  )}
                 </div>
-                {i < totalSteps - 1 && (
-                  <div className={`h-0.5 w-8 transition-colors ${i < step ? 'bg-emerald-600' : 'bg-gray-100'}`} />
-                )}
-              </div>
-            ))}
+              )
+            })}
           </div>
 
       <form onSubmit={handleSubmit(onSubmit)}>
-        <AnimatePresence mode="wait">
+        <AnimatePresence mode="wait" custom={direction}>
           <motion.div
             key={step}
-            initial={{ opacity: 0, x: 20 }}
+            custom={direction}
+            initial={{ opacity: 0, x: direction * 40 }}
             animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-            transition={{ duration: 0.2 }}
+            exit={{ opacity: 0, x: direction * -40 }}
+            transition={{ duration: 0.25, ease: 'easeInOut' }}
           >
             {step === 0 && (
-              <Card className="border-0 shadow-2xl rounded-3xl overflow-hidden bg-white/90 backdrop-blur-xl border border-gray-100">
+              <Card className="shadow-sm border border-gray-200 rounded-xl overflow-hidden bg-white">
                 <CardHeader>
                   <CardTitle>{t('survey.select_service')}</CardTitle>
                 </CardHeader>
@@ -234,11 +361,13 @@ export default function SurveiPage() {
                       render={({ field }) => (
                         <Select value={field.value} onValueChange={(v) => v !== null && field.onChange(v)}>
                           <SelectTrigger className="w-full">
-                            <SelectValue placeholder={t('survey.select_service_placeholder')} />
+                            <SelectValue placeholder={t('survey.select_service_placeholder')}>
+                              {field.value ? services.find((s) => s.id === field.value)?.name : null}
+                            </SelectValue>
                           </SelectTrigger>
-                          <SelectContent>
+                          <SelectContent className="max-h-[400px]">
                             {services.map((s) => (
-                              <SelectItem key={s.id} value={s.id}>
+                              <SelectItem key={s.id} value={s.id} className="py-2 text-sm cursor-pointer">
                                 {s.name}
                               </SelectItem>
                             ))}
@@ -251,7 +380,74 @@ export default function SurveiPage() {
                     )}
                   </div>
 
-                  <div className="flex items-center gap-4 rounded-lg border p-4">
+                  {!isAnonymous && (
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Label className="flex items-center gap-2">
+                          <User className="size-4 text-muted-foreground" />
+                          {t('survey.name')} <span className="text-destructive">*</span>
+                        </Label>
+                        <Controller
+                          name="respondent_name"
+                          control={control}
+                          render={({ field }) => (
+                            <Input 
+                              placeholder="Masukkan nama lengkap Anda..." 
+                              {...field} 
+                              onChange={(e) => {
+                                const val = e.target.value.replace(/[^a-zA-Z\s.,'-]/g, '')
+                                const titleCase = val.replace(/\b\w/g, c => c.toUpperCase())
+                                field.onChange(titleCase)
+                              }}
+                            />
+                          )}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="flex items-center gap-2">
+                          <Phone className="size-4 text-muted-foreground" />
+                          Kontak (HP/WhatsApp) <span className="text-destructive">*</span>
+                        </Label>
+                        <Controller
+                          name="respondent_contact"
+                          control={control}
+                          render={({ field }) => (
+                            <Input 
+                              type="tel"
+                              maxLength={13}
+                              {...field}
+                              onChange={(e) => field.onChange(e.target.value.replace(/\D/g, ''))}
+                            />
+                          )}
+                        />
+                        {respondentContact.length > 0 && respondentContact.length < 10 && (
+                          <p className="text-xs text-destructive">Kontak minimal 10 digit angka</p>
+                        )}
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="flex items-center gap-2">
+                          <MapPin className="size-4 text-muted-foreground" />
+                          Alamat Lengkap <span className="text-destructive">*</span>
+                        </Label>
+                        <Controller
+                          name="respondent_address"
+                          control={control}
+                          render={({ field }) => (
+                            <Input 
+                              placeholder="Masukkan alamat lengkap Anda..." 
+                              {...field}
+                              onChange={(e) => {
+                                const titleCase = e.target.value.replace(/\b\w/g, c => c.toUpperCase())
+                                field.onChange(titleCase)
+                              }}
+                            />
+                          )}
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex items-center gap-4 rounded-lg border p-4 bg-gray-50/50">
                     <Controller
                       name="is_anonymous"
                       control={control}
@@ -260,37 +456,19 @@ export default function SurveiPage() {
                       )}
                     />
                     <div>
-                      <Label className="font-medium">{t('survey.anonymous')}</Label>
-                      <p className="text-sm text-muted-foreground">{t('survey.anonymous_desc')}</p>
+                      <Label className="font-medium flex items-center gap-1.5">
+                        <ShieldAlert className="size-4 text-amber-500" />
+                        {t('survey.anonymous')}
+                      </Label>
+                      <p className="text-sm text-muted-foreground mt-0.5">{t('survey.anonymous_desc')}</p>
                     </div>
                   </div>
-
-                  {!isAnonymous && (
-                    <div className="space-y-4">
-                      <div className="space-y-2">
-                        <Label>{t('survey.name')}</Label>
-                        <Controller
-                          name="respondent_name"
-                          control={control}
-                          render={({ field }) => <Input {...field} />}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>{t('survey.contact')}</Label>
-                        <Controller
-                          name="respondent_contact"
-                          control={control}
-                          render={({ field }) => <Input {...field} />}
-                        />
-                      </div>
-                    </div>
-                  )}
                 </CardContent>
               </Card>
             )}
 
             {step === 1 && (
-              <Card className="border-0 shadow-xl rounded-2xl overflow-hidden bg-white/95 backdrop-blur-sm">
+              <Card className="shadow-sm border border-gray-200 rounded-xl overflow-hidden bg-white">
                 <CardHeader>
                   <CardTitle>{t('survey.demographic_info')}</CardTitle>
                 </CardHeader>
@@ -310,7 +488,7 @@ export default function SurveiPage() {
                             <SelectValue placeholder={`-- ${locale === 'id' ? 'Pilih' : 'Select'} --`} />
                           </SelectTrigger>
                           <SelectContent>
-                            {field.options?.map((opt) => (
+                            {field.demographic_options?.map((opt) => (
                               <SelectItem key={opt.id} value={opt.value}>
                                 {locale === 'id' ? opt.label_id : opt.label_en}
                               </SelectItem>
@@ -331,10 +509,14 @@ export default function SurveiPage() {
             )}
 
             {step === 2 && (
-              <Card className="border-0 shadow-xl rounded-2xl overflow-hidden bg-white/95 backdrop-blur-sm">
-                <CardHeader>
-                  <CardTitle>{t('survey.ipkp_section')}</CardTitle>
-                  <CardDescription>Nilai 1 (Sangat Tidak Baik) - 4 (Sangat Baik)</CardDescription>
+              <Card className="shadow-sm border border-gray-200 rounded-xl overflow-hidden bg-white">
+                <CardHeader className="text-center py-6">
+                  <CardTitle className="text-xl md:text-2xl font-bold text-gray-900">{t('survey.ipkp_section')}</CardTitle>
+                  <CardDescription className="text-base font-semibold text-gray-700 mt-2 flex items-center justify-center gap-1.5 flex-wrap">
+                    Nilai 1 <Star className="size-4 fill-yellow-400 text-yellow-400 -mt-0.5" /> (Tidak Baik) 
+                    <span className="mx-1">-</span> 
+                    Nilai 4 <Star className="size-4 fill-yellow-400 text-yellow-400 -mt-0.5" /> (Sangat Baik)
+                  </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-8">
                   {ipkpUnsur.map((unsur) => (
@@ -355,15 +537,34 @@ export default function SurveiPage() {
                       </div>
                     </div>
                   ))}
+
+                  <div className="pt-4 border-t border-dashed border-gray-200">
+                    <Label className="text-sm font-semibold text-gray-700 flex items-center gap-2 mb-2">
+                      <svg className="size-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" /></svg>
+                      Saran &amp; Kritik
+                      <span className="font-normal text-muted-foreground text-xs">(opsional)</span>
+                    </Label>
+                    <Textarea
+                      value={ipkpFeedback}
+                      onChange={(e) => setIpkpFeedback(e.target.value)}
+                      placeholder="Tuliskan saran atau kritik Anda terkait kualitas pelayanan..."
+                      rows={4}
+                      className="resize-none"
+                    />
+                  </div>
                 </CardContent>
               </Card>
             )}
 
             {step === 3 && (
-              <Card className="border-0 shadow-xl rounded-2xl overflow-hidden bg-white/95 backdrop-blur-sm">
-                <CardHeader>
-                  <CardTitle>{t('survey.ipak_section')}</CardTitle>
-                  <CardDescription>Nilai 1 (Sangat Tidak Baik) - 4 (Sangat Baik)</CardDescription>
+              <Card className="shadow-sm border border-gray-200 rounded-xl overflow-hidden bg-white">
+                <CardHeader className="text-center py-6">
+                  <CardTitle className="text-xl md:text-2xl font-bold text-gray-900">{t('survey.ipak_section')}</CardTitle>
+                  <CardDescription className="text-base font-semibold text-gray-700 mt-2 flex items-center justify-center gap-1.5 flex-wrap">
+                    Nilai 1 <Star className="size-4 fill-yellow-400 text-yellow-400 -mt-0.5" /> (Tidak Baik) 
+                    <span className="mx-1">-</span> 
+                    Nilai 4 <Star className="size-4 fill-yellow-400 text-yellow-400 -mt-0.5" /> (Sangat Baik)
+                  </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-8">
                   {ipakUnsur.map((unsur) => (
@@ -384,25 +585,132 @@ export default function SurveiPage() {
                       </div>
                     </div>
                   ))}
+
+                  <div className="pt-4 border-t border-dashed border-gray-200">
+                    <Label className="text-sm font-semibold text-gray-700 flex items-center gap-2 mb-2">
+                      <svg className="size-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" /></svg>
+                      Saran &amp; Kritik
+                      <span className="font-normal text-muted-foreground text-xs">(opsional)</span>
+                    </Label>
+                    <Textarea
+                      value={ipakFeedback}
+                      onChange={(e) => setIpakFeedback(e.target.value)}
+                      placeholder="Tuliskan saran atau kritik Anda terkait pencegahan korupsi..."
+                      rows={4}
+                      className="resize-none"
+                    />
+                  </div>
                 </CardContent>
               </Card>
             )}
 
             {step === 4 && (
-              <Card className="border-0 shadow-xl rounded-2xl overflow-hidden bg-white/95 backdrop-blur-sm">
-                <CardHeader>
-                  <CardTitle>Verifikasi Keamanan</CardTitle>
-                  <CardDescription>Verifikasi bahwa Anda bukan robot</CardDescription>
-                </CardHeader>
-                <CardContent className="flex justify-center py-8">
-                  {turnstileSiteKey && (
-                    <Turnstile
-                      siteKey={turnstileSiteKey}
-                      onSuccess={(token) => setTurnstileToken(token)}
-                    />
-                  )}
-                </CardContent>
-              </Card>
+              <div className="space-y-4">
+                {/* Ringkasan Data Responden */}
+                <Card className="shadow-sm border border-gray-200 rounded-xl overflow-hidden bg-white">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <User className="size-4 text-emerald-600" />
+                      Data Responden
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <dl className="divide-y divide-gray-100 text-sm">
+                      <div className="flex justify-between py-2">
+                        <dt className="text-muted-foreground">Jenis Layanan</dt>
+                        <dd className="font-medium text-right">{services.find(s => s.id === selectedServiceId)?.name || '-'}</dd>
+                      </div>
+                      {isAnonymous ? (
+                        <div className="flex justify-between py-2">
+                          <dt className="text-muted-foreground">Identitas</dt>
+                          <dd className="font-medium flex items-center gap-1.5 text-amber-600">
+                            <ShieldAlert className="size-3.5" /> Anonim
+                          </dd>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="flex justify-between py-2">
+                            <dt className="text-muted-foreground">Nama</dt>
+                            <dd className="font-medium">{respondentName || '-'}</dd>
+                          </div>
+                          <div className="flex justify-between py-2">
+                            <dt className="text-muted-foreground">Kontak (HP/WhatsApp)</dt>
+                            <dd className="font-medium">{respondentContact || '-'}</dd>
+                          </div>
+                          <div className="flex justify-between py-2">
+                            <dt className="text-muted-foreground">Alamat</dt>
+                            <dd className="font-medium text-right max-w-[60%]">{respondentAddress || '-'}</dd>
+                          </div>
+                        </>
+                      )}
+                    </dl>
+                  </CardContent>
+                </Card>
+
+                {/* Ringkasan Kelengkapan Jawaban */}
+                <Card className="shadow-sm border border-gray-200 rounded-xl overflow-hidden bg-white">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <ListTodo className="size-4 text-emerald-600" />
+                      Kelengkapan Jawaban
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <dl className="divide-y divide-gray-100 text-sm">
+                      <div className="flex justify-between py-2">
+                        <dt className="text-muted-foreground">IPKP (Kualitas Pelayanan)</dt>
+                        <dd className="font-medium">
+                          {(() => {
+                            const qs = ipkpUnsur.flatMap(u => u.questions)
+                            const filled = qs.filter(q => answers[q.id] && answers[q.id] > 0).length
+                            const total = qs.length
+                            return (
+                              <span className={filled === total ? 'text-emerald-600' : 'text-red-500'}>
+                                {filled}/{total} pertanyaan terisi
+                              </span>
+                            )
+                          })()}
+                        </dd>
+                      </div>
+                      <div className="flex justify-between py-2">
+                        <dt className="text-muted-foreground">IPAK (Anti Korupsi)</dt>
+                        <dd className="font-medium">
+                          {(() => {
+                            const qs = ipakUnsur.flatMap(u => u.questions)
+                            const filled = qs.filter(q => answers[q.id] && answers[q.id] > 0).length
+                            const total = qs.length
+                            return (
+                              <span className={filled === total ? 'text-emerald-600' : 'text-red-500'}>
+                                {filled}/{total} pertanyaan terisi
+                              </span>
+                            )
+                          })()}
+                        </dd>
+                      </div>
+                      {ipkpFeedback && (
+                        <div className="flex justify-between py-2">
+                          <dt className="text-muted-foreground">Saran IPKP</dt>
+                          <dd className="font-medium text-emerald-600">✓ Diisi</dd>
+                        </div>
+                      )}
+                      {ipakFeedback && (
+                        <div className="flex justify-between py-2">
+                          <dt className="text-muted-foreground">Saran IPAK</dt>
+                          <dd className="font-medium text-emerald-600">✓ Diisi</dd>
+                        </div>
+                      )}
+                    </dl>
+                  </CardContent>
+                </Card>
+
+                {/* Peringatan */}
+                <div className="rounded-xl bg-amber-50 border border-amber-200 p-4 flex items-start gap-3">
+                  <svg className="size-5 text-amber-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                  <p className="text-sm text-amber-800">
+                    Dengan mengklik tombol <strong>&ldquo;Kirim Survei&rdquo;</strong>, Anda menyatakan bahwa seluruh jawaban yang diberikan adalah benar dan jujur. Data akan digunakan untuk peningkatan kualitas pelayanan publik.
+                  </p>
+                </div>
+              </div>
             )}
           </motion.div>
         </AnimatePresence>
@@ -411,24 +719,34 @@ export default function SurveiPage() {
           <Button
             type="button"
             variant="outline"
-            onClick={() => setStep((s) => Math.max(0, s - 1))}
+            onClick={() => goToStep(step - 1)}
             disabled={step === 0}
+            className="rounded-full px-6 transition-all duration-300 hover:shadow-sm active:scale-95 group"
           >
-            <ChevronLeft className="mr-1 size-4" />
+            <ChevronLeft className="mr-2 size-4 transition-transform duration-300 group-hover:-translate-x-1" />
             {t('common.back')}
           </Button>
 
           {step < totalSteps - 1 ? (
-            <Button type="button" onClick={() => setStep((s) => s + 1)} disabled={!canProceed()}>
-              {t('common.save')}
-              <ChevronRight className="ml-1 size-4" />
+            <Button 
+              type="button" 
+              onClick={() => goToStep(step + 1)}
+              disabled={!canProceed()}
+              className="rounded-full px-8 shadow-md hover:shadow-lg transition-all duration-300 active:scale-95 group"
+            >
+              Lanjut
+              <ChevronRight className="ml-2 size-4 transition-transform duration-300 group-hover:translate-x-1" />
             </Button>
           ) : (
-            <Button type="submit" disabled={!canProceed() || submitting}>
+            <Button 
+              type="submit" 
+              disabled={!canProceed() || submitting || !submitReady}
+              className="rounded-full px-8 shadow-md hover:shadow-lg transition-all duration-300 active:scale-95 group"
+            >
               {submitting ? (
-                <Loader2 className="mr-1 size-4 animate-spin" />
+                <Loader2 className="mr-2 size-4 animate-spin" />
               ) : (
-                <Send className="mr-1 size-4" />
+                <Send className="mr-2 size-4 transition-transform duration-300 group-hover:translate-x-1 group-hover:-translate-y-1" />
               )}
               {t('common.submit')}
             </Button>

@@ -4,6 +4,7 @@ export const SURVEY_ROUTES = {
   HOME: '/',
   SURVEI: '/survei',
   HASIL: '/hasil',
+  PROFIL: '/profil',
   BARCODE: '/barcode',
   ADMIN: '/admin',
 } as const
