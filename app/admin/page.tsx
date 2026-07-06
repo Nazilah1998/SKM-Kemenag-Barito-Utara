@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { Users, FileText, Calendar, TrendingUp, Loader2, Activity, BarChart, ChevronRight } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
-import { motion } from 'framer-motion'
+import { motion, Variants } from 'framer-motion'
 import type { SurveyPeriod } from '@/types'
 import Link from 'next/link'
 
@@ -48,8 +48,8 @@ export default function AdminDashboardPage() {
         }
 
         const [ipkpRes, ipakRes] = await Promise.all([
-          ipkpReq.maybeSingle().catch(() => ({ data: null })), // Fallback if period_id doesn't exist
-          ipakReq.maybeSingle().catch(() => ({ data: null }))
+          ipkpReq.maybeSingle(),
+          ipakReq.maybeSingle()
         ])
 
         setStats({
@@ -128,7 +128,7 @@ export default function AdminDashboardPage() {
     },
   ]
 
-  const container = {
+  const container: Variants = {
     hidden: { opacity: 0 },
     show: {
       opacity: 1,
@@ -136,7 +136,7 @@ export default function AdminDashboardPage() {
     }
   }
 
-  const itemAnim = {
+  const itemAnim: Variants = {
     hidden: { opacity: 0, y: 20 },
     show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 24 } }
   }
