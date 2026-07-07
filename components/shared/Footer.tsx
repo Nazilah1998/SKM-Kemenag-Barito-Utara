@@ -15,7 +15,7 @@ export function Footer() {
         </p>
         <div className="mt-3 h-px w-16 bg-gray-200 rounded-full"></div>
         <p className="text-[11px] text-gray-400 mt-2">
-          &copy; {new Date().getFullYear()} Kemenag Barito Utara. Hak Cipta Dilindungi.
+          &copy; {new Date().getFullYear()} Kemenag Barito Utara. Hak Cipta Dilindungi. | <a href="https://baritoutara.kemenag.go.id" target="_blank" rel="noopener noreferrer" className="hover:text-emerald-600 transition-colors">baritoutara.kemenag.go.id</a>
         </p>
       </div>
     </footer>

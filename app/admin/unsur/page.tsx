@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Plus, Pencil, Trash2, ListChecks, Loader2, BarChart3 } from 'lucide-react'
@@ -52,10 +52,13 @@ export default function AdminUnsurPage() {
 
   const supabase = createClient()
 
-  const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<UnsurForm>({
+  const { register, handleSubmit, reset, setValue, control, formState: { errors } } = useForm<UnsurForm>({
     resolver: zodResolver(unsurSchema),
     defaultValues: { name: '', index_type: 'IPKP', description: '', is_active: true, sort_order: 0 },
   })
+
+  const indexType = useWatch({ control, name: 'index_type' })
+  const isActive = useWatch({ control, name: 'is_active' })
 
   async function fetchUnsur() {
     const { data } = await supabase.from('unsur').select('*').order('sort_order')
@@ -63,7 +66,7 @@ export default function AdminUnsurPage() {
     setLoading(false)
   }
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps, react-hooks/set-state-in-effect
   useEffect(() => { fetchUnsur() }, [])
 
   function openCreate() {
@@ -238,7 +241,7 @@ export default function AdminUnsurPage() {
             <div className="space-y-2">
               <Label>Tipe Index</Label>
 
-              <Select value={watch('index_type')} onValueChange={(v) => v && setValue('index_type', v as 'IPKP' | 'IPAK')}>
+              <Select value={indexType} onValueChange={(v) => v && setValue('index_type', v as 'IPKP' | 'IPAK')}>
                 <SelectTrigger className="w-full">
                   <SelectValue />
                 </SelectTrigger>
@@ -254,7 +257,7 @@ export default function AdminUnsurPage() {
             </div>
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
-                <Switch id="is_active" checked={watch('is_active')} onCheckedChange={(v) => setValue('is_active', v)} />
+                <Switch id="is_active" checked={isActive} onCheckedChange={(v) => setValue('is_active', v)} />
                 <Label htmlFor="is_active">Aktif</Label>
               </div>
               <div className="ml-auto space-y-1">

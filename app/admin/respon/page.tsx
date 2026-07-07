@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback, useMemo } from 'react'
-import { Eye, Trash2, Loader2, Search, X, ClipboardList } from 'lucide-react'
+import { Eye, Trash2, Loader2, Search, X, ClipboardList, User, ListTodo } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -238,7 +238,7 @@ export default function AdminResponPage() {
                     <TableCell>
                       {r.is_anonymous ? <Badge variant="secondary">Anonim</Badge> : <Badge variant="default">Teridentifikasi</Badge>}
                     </TableCell>
-                    <TableCell className="text-muted-foreground">{r.is_anonymous ? '-' : r.respondent_name || '-'}</TableCell>
+                    <TableCell className="text-muted-foreground">{r.respondent_name || '-'}</TableCell>
                     <TableCell>
                       <Badge variant="outline">{r.locale?.toUpperCase() || '-'}</Badge>
                     </TableCell>
@@ -283,73 +283,115 @@ export default function AdminResponPage() {
       </Card>
 
       <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
-        <DialogContent className="sm:max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Detail Respon</DialogTitle>
-            <DialogDescription>Informasi lengkap respon survei</DialogDescription>
+        <DialogContent className="sm:max-w-[85vw] max-h-[90vh] overflow-y-auto rounded-xl">
+          <DialogHeader className="pb-2 border-b border-gray-100 dark:border-gray-800">
+            <DialogTitle className="text-xl">Detail Respon</DialogTitle>
+            <DialogDescription>Informasi lengkap respon survei responden</DialogDescription>
           </DialogHeader>
+          
           {detailLoading ? (
-            <div className="flex justify-center py-8">
-              <Loader2 className="size-6 animate-spin text-emerald-600" />
+            <div className="flex justify-center py-12">
+              <Loader2 className="size-8 animate-spin text-emerald-600" />
             </div>
           ) : selectedResponse && (
-            <div className="space-y-6">
-              <div className="grid grid-cols-2 gap-4 rounded-lg border p-4">
+            <div className="space-y-6 py-4">
+              
+              {/* General Info */}
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 rounded-xl border border-gray-200 dark:border-gray-800 p-4 bg-gray-50/50 dark:bg-gray-800/30">
                 <div>
-                  <p className="text-xs text-muted-foreground">Layanan</p>
-                  <p className="font-medium">{selectedResponse.service?.name || '-'}</p>
+                  <p className="text-xs text-muted-foreground mb-0.5">Layanan</p>
+                  <p className="font-medium text-gray-900 dark:text-white leading-tight">{selectedResponse.services?.name || '-'}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">Periode</p>
-                  <p className="font-medium">{selectedResponse.period?.label || '-'}</p>
+                  <p className="text-xs text-muted-foreground mb-0.5">Periode</p>
+                  <p className="font-medium text-gray-900 dark:text-white leading-tight">{selectedResponse.survey_periods?.label || '-'}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">Anonim</p>
-                  <p className="font-medium">{selectedResponse.is_anonymous ? 'Ya' : 'Tidak'}</p>
+                  <p className="text-xs text-muted-foreground mb-0.5">Anonim</p>
+                  <p className="font-medium text-gray-900 dark:text-white leading-tight">
+                    {selectedResponse.is_anonymous ? (
+                      <Badge variant="secondary" className="font-medium text-xs py-0">Ya</Badge>
+                    ) : (
+                      <span className="text-emerald-600">Tidak</span>
+                    )}
+                  </p>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">Nama</p>
-                  <p className="font-medium">{selectedResponse.respondent_name || '-'}</p>
+                  <p className="text-xs text-muted-foreground mb-0.5">Nama</p>
+                  <p className="font-medium text-gray-900 dark:text-white leading-tight">{selectedResponse.respondent_name || '-'}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">Kontak</p>
-                  <p className="font-medium">{selectedResponse.respondent_contact || '-'}</p>
+                  <p className="text-xs text-muted-foreground mb-0.5">Kontak</p>
+                  <p className="font-medium text-gray-900 dark:text-white leading-tight">{selectedResponse.respondent_contact || '-'}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">Tanggal</p>
-                  <p className="font-medium">{new Date(selectedResponse.submitted_at).toLocaleString('id-ID')}</p>
+                  <p className="text-xs text-muted-foreground mb-0.5">Tanggal Submit</p>
+                  <p className="font-medium text-gray-900 dark:text-white leading-tight">{new Date(selectedResponse.submitted_at).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' })}</p>
                 </div>
               </div>
 
+              {/* Feedback */}
+              {(selectedResponse.ipkp_feedback || selectedResponse.ipak_feedback) && (
+                <div className="rounded-xl border border-emerald-100 dark:border-emerald-900/50 p-4 bg-emerald-50/50 dark:bg-emerald-900/10 space-y-4">
+                  <h4 className="text-sm font-semibold flex items-center gap-2 text-emerald-800 dark:text-emerald-400">
+                    <ClipboardList className="size-4" />
+                    Saran &amp; Kritik
+                  </h4>
+                  {selectedResponse.ipkp_feedback && (
+                    <div className="bg-white dark:bg-gray-900/50 p-3 rounded-lg border border-emerald-100/50 dark:border-emerald-900/30">
+                      <p className="text-xs text-emerald-600 dark:text-emerald-500 font-semibold mb-1.5 uppercase tracking-wide">Kualitas Pelayanan (IPKP)</p>
+                      <p className="text-sm italic text-gray-700 dark:text-gray-300 leading-relaxed">&ldquo;{selectedResponse.ipkp_feedback}&rdquo;</p>
+                    </div>
+                  )}
+                  {selectedResponse.ipak_feedback && (
+                    <div className="bg-white dark:bg-gray-900/50 p-3 rounded-lg border border-emerald-100/50 dark:border-emerald-900/30">
+                      <p className="text-xs text-emerald-600 dark:text-emerald-500 font-semibold mb-1.5 uppercase tracking-wide">Anti Korupsi (IPAK)</p>
+                      <p className="text-sm italic text-gray-700 dark:text-gray-300 leading-relaxed">&ldquo;{selectedResponse.ipak_feedback}&rdquo;</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Demographics */}
               {detailDemographics.length > 0 && (
-                <div>
-                  <h4 className="mb-2 text-sm font-medium">Data Demografi</h4>
-                  <div className="space-y-1">
+                <div className="rounded-xl border border-gray-200 dark:border-gray-800 p-4 bg-white dark:bg-gray-900">
+                  <h4 className="mb-4 text-sm font-semibold flex items-center gap-2 text-gray-800 dark:text-gray-200">
+                    <User className="size-4 text-emerald-600" />
+                    Data Demografi
+                  </h4>
+                  <div className="space-y-2">
                     {detailDemographics.map((d) => (
-                      <div key={d.id} className="flex items-center justify-between rounded-md border px-3 py-1.5 text-sm">
+                      <div key={d.id} className="flex flex-col sm:flex-row sm:items-center justify-between rounded-lg border border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/30 px-4 py-2.5 text-sm">
                         <span className="text-muted-foreground">{d.field?.label_id || d.field_id}</span>
-                        <span className="font-medium">{d.value}</span>
+                        <span className="font-medium text-gray-900 dark:text-white mt-1 sm:mt-0 text-right">{d.value}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              {/* Answers */}
+              {detailAnswers.length > 0 && (
+                <div className="rounded-xl border border-gray-200 dark:border-gray-800 p-4 bg-white dark:bg-gray-900">
+                  <h4 className="mb-4 text-sm font-semibold flex items-center gap-2 text-gray-800 dark:text-gray-200">
+                    <ListTodo className="size-4 text-emerald-600" />
+                    Jawaban Penilaian
+                  </h4>
+                  <div className="space-y-2">
+                    {detailAnswers.map((a) => (
+                      <div key={a.id} className="flex items-center justify-between rounded-lg border border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/30 p-3 text-sm gap-4">
+                        <span className="text-muted-foreground leading-relaxed">
+                          {a.question?.question_text_id || a.question_id}
+                        </span>
+                        <div className="shrink-0 flex items-center justify-center size-8 rounded-md bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 font-bold text-base">
+                          {a.rating_value}
+                        </div>
                       </div>
                     ))}
                   </div>
                 </div>
               )}
 
-              {detailAnswers.length > 0 && (
-                <div>
-                  <h4 className="mb-2 text-sm font-medium">Jawaban Penilaian</h4>
-                  <div className="space-y-1">
-                    {detailAnswers.map((a) => (
-                      <div key={a.id} className="flex items-center justify-between rounded-md border px-3 py-1.5 text-sm">
-                        <span className="text-muted-foreground max-w-md truncate">
-                          {a.question?.question_text_id || a.question_id}
-                        </span>
-                        <span className="ml-2 shrink-0 font-bold">{a.rating_value}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
             </div>
           )}
           <DialogFooter>

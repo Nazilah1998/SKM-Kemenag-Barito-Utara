@@ -80,6 +80,8 @@ export interface Response {
   turnstile_verified: boolean
   ip_address: string | null
   submitted_at: string
+  ipkp_feedback: string | null
+  ipak_feedback: string | null
   services?: Service
   survey_periods?: SurveyPeriod
   service?: Service

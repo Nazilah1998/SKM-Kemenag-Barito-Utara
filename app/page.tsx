@@ -29,12 +29,17 @@ export default function HomePage() {
         .select('*')
         .returns<IndexSummary[]>()
 
-      const { count } = await supabase
-        .from('responses')
-        .select('*', { count: 'exact', head: true })
+      const { data: byServiceData } = await supabase
+        .from('vw_index_summary_by_service')
+        .select('index_type, jumlah_responden')
 
       if (idxData) setSummary(idxData)
-      if (count !== null) setTotalResponses(count)
+      if (byServiceData) {
+        const count = byServiceData
+          .filter(item => item.index_type === 'IPKP')
+          .reduce((acc, item) => acc + (item.jumlah_responden || 0), 0)
+        setTotalResponses(count)
+      }
       setLoading(false)
     }
     fetchData()
@@ -48,8 +53,11 @@ export default function HomePage() {
         supabase.from('vw_index_summary').select('*').returns<IndexSummary[]>().then(({ data }) => {
           if (data) setSummary(data)
         })
-        supabase.from('responses').select('*', { count: 'exact', head: true }).then(({ count }) => {
-          if (count !== null) setTotalResponses(count)
+        supabase.from('vw_index_summary_by_service').select('index_type, jumlah_responden').then(({ data }) => {
+          if (data) {
+            const count = data.filter(item => item.index_type === 'IPKP').reduce((acc, item) => acc + (item.jumlah_responden || 0), 0)
+            setTotalResponses(count)
+          }
         })
       })
       .subscribe()

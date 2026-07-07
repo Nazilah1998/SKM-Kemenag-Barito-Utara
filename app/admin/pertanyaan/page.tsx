@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Plus, Pencil, Trash2, Loader2 } from 'lucide-react'
@@ -57,13 +57,17 @@ export default function AdminPertanyaanPage() {
 
   const supabase = createClient()
 
-  const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<QuestionForm>({
+  const { register, handleSubmit, reset, setValue, control, formState: { errors } } = useForm<QuestionForm>({
     resolver: zodResolver(questionSchema),
     defaultValues: {
       unsur_id: '', service_id: undefined, question_text_id: '', question_text_en: '',
       input_type: 'star_rating', is_active: true, sort_order: 0,
     },
   })
+
+  const inputType = useWatch({ control, name: 'input_type' })
+  const isActive = useWatch({ control, name: 'is_active' })
+  const serviceId = useWatch({ control, name: 'service_id' })
 
   async function fetchInitial() {
     const [unsurRes, servicesRes] = await Promise.all([
@@ -81,9 +85,9 @@ export default function AdminPertanyaanPage() {
     setLoading(false)
   }
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps, react-hooks/set-state-in-effect
   useEffect(() => { fetchInitial() }, [])
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps, react-hooks/set-state-in-effect
   useEffect(() => { setLoading(true); fetchQuestions() }, [filterUnsur])
 
   function openCreate() {
@@ -278,7 +282,7 @@ export default function AdminPertanyaanPage() {
               <div className="space-y-2">
                 <Label>Tipe Input</Label>
 
-                <Select value={watch('input_type')} onValueChange={(v) => v && setValue('input_type', v as 'star_rating')}>
+                <Select value={inputType} onValueChange={(v) => v && setValue('input_type', v as 'star_rating')}>
                   <SelectTrigger className="w-full">
                     <SelectValue />
                   </SelectTrigger>
@@ -289,7 +293,7 @@ export default function AdminPertanyaanPage() {
               </div>
               <div className="space-y-2">
                 <Label>Layanan (opsional)</Label>
-                <Select value={watch('service_id') || ''} onValueChange={(v) => setValue('service_id', v || undefined)}>
+                <Select value={serviceId || ''} onValueChange={(v) => setValue('service_id', v || undefined)}>
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Semua Layanan" />
                   </SelectTrigger>
@@ -304,7 +308,7 @@ export default function AdminPertanyaanPage() {
             </div>
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
-                <Switch id="is_active" checked={watch('is_active')} onCheckedChange={(v) => setValue('is_active', v)} />
+                <Switch id="is_active" checked={isActive} onCheckedChange={(v) => setValue('is_active', v)} />
                 <Label htmlFor="is_active">Aktif</Label>
               </div>
               <div className="ml-auto space-y-1">

@@ -123,12 +123,10 @@ export default function SurveiPage() {
   const canProceed = useCallback(() => {
     if (step === 0) {
       if (!selectedServiceId) return false
-      if (!isAnonymous) {
-        if (!respondentName || !respondentContact || !respondentAddress) return false
-        if (!/^[a-zA-Z\s.,'-]+$/.test(respondentName)) return false
-        if (!/^[0-9]{10,13}$/.test(respondentContact)) return false
-        if (respondentAddress.trim().length < 5) return false
-      }
+      if (!respondentName || !respondentContact || !respondentAddress) return false
+      if (!/^[a-zA-Z\s.,'-]+$/.test(respondentName)) return false
+      if (!/^[0-9]{10,13}$/.test(respondentContact)) return false
+      if (respondentAddress.trim().length < 5) return false
       return true
     }
     if (step === 1) {
@@ -145,17 +143,15 @@ export default function SurveiPage() {
     }
     if (step === 4) return true
     return true
-  }, [step, selectedServiceId, isAnonymous, respondentName, respondentContact, respondentAddress, answers, demographics, demographicFields, ipkpUnsur, ipakUnsur])
+  }, [step, selectedServiceId, respondentName, respondentContact, respondentAddress, answers, demographics, demographicFields, ipkpUnsur, ipakUnsur])
 
   function canStepProceed(s: number): boolean {
     if (s === 0) {
       if (!selectedServiceId) return false
-      if (!isAnonymous) {
-        if (!respondentName || !respondentContact || !respondentAddress) return false
-        if (!/^[a-zA-Z\s.,'-]+$/.test(respondentName)) return false
-        if (!/^[0-9]{10,13}$/.test(respondentContact)) return false
-        if (respondentAddress.trim().length < 5) return false
-      }
+      if (!respondentName || !respondentContact || !respondentAddress) return false
+      if (!/^[a-zA-Z\s.,'-]+$/.test(respondentName)) return false
+      if (!/^[0-9]{10,13}$/.test(respondentContact)) return false
+      if (respondentAddress.trim().length < 5) return false
       return true
     }
     if (s === 1) {
@@ -208,9 +204,9 @@ export default function SurveiPage() {
           service_id: formData.service_id,
           period_id: period?.id,
           is_anonymous: formData.is_anonymous,
-          respondent_name: formData.is_anonymous ? 'Anonim' : formData.respondent_name,
-          respondent_contact: formData.is_anonymous ? '08xxxxxxxxxx' : formData.respondent_contact,
-          respondent_address: formData.is_anonymous ? 'Anonim' : formData.respondent_address,
+          respondent_name: formData.respondent_name,
+          respondent_contact: formData.respondent_contact,
+          respondent_address: formData.respondent_address,
           ipkp_feedback: ipkpFeedback.trim() || null,
           ipak_feedback: ipakFeedback.trim() || null,
           locale,
@@ -380,8 +376,7 @@ export default function SurveiPage() {
                     )}
                   </div>
 
-                  {!isAnonymous && (
-                    <div className="space-y-4">
+                  <div className="space-y-4">
                       <div className="space-y-2">
                         <Label className="flex items-center gap-2">
                           <User className="size-4 text-muted-foreground" />
@@ -444,8 +439,7 @@ export default function SurveiPage() {
                           )}
                         />
                       </div>
-                    </div>
-                  )}
+                  </div>
 
                   <div className="flex items-center gap-4 rounded-lg border p-4 bg-gray-50/50">
                     <Controller

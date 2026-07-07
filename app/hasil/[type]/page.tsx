@@ -42,23 +42,27 @@ export default function HasilPage() {
     async function fetchData() {
       const supabase = createClient()
 
-      const [summaryRes, byServiceRes, trendRes, countRes, unsurRes, demoRes, servicesRes] = await Promise.all([
+      const [summaryRes, byServiceRes, trendRes, unsurRes, demoRes, servicesRes] = await Promise.all([
         supabase.from('vw_index_summary').select('*'),
         supabase.from('vw_index_summary_by_service').select('*'),
         supabase.from('vw_index_trend').select('*').order('bulan', { ascending: true }),
-        supabase.from('responses').select('id', { count: 'exact', head: true }),
         supabase.from('vw_unsur_summary').select('*'),
         supabase.from('vw_demographic_summary').select('*'),
         supabase.from('services').select('*').eq('is_active', true).order('name', { ascending: true }),
       ])
 
       if (summaryRes.data) setSummary(summaryRes.data as IndexSummary[])
-      if (byServiceRes.data) setByService(byServiceRes.data as IndexByService[])
+      if (byServiceRes.data) {
+        setByService(byServiceRes.data as IndexByService[])
+        const count = (byServiceRes.data as IndexByService[])
+          .filter(item => item.index_type === 'IPKP')
+          .reduce((acc, item) => acc + (item.jumlah_responden || 0), 0)
+        setTotalResponses(count)
+      }
       if (trendRes.data) setTrend(trendRes.data as IndexTrend[])
       if (unsurRes.data) setUnsurSummary(unsurRes.data as UnsurSummary[])
       if (demoRes.data) setDemoSummary(demoRes.data as DemographicSummary[])
       if (servicesRes.data) setAllServices(servicesRes.data)
-      if (countRes.count !== null) setTotalResponses(countRes.count)
 
       setLoading(false)
     }
@@ -74,7 +78,13 @@ export default function HasilPage() {
           if (data) setSummary(data as IndexSummary[])
         })
         supabase.from('vw_index_summary_by_service').select('*').then(({ data }) => {
-          if (data) setByService(data as IndexByService[])
+          if (data) {
+            setByService(data as IndexByService[])
+            const count = (data as IndexByService[])
+              .filter(item => item.index_type === 'IPKP')
+              .reduce((acc, item) => acc + (item.jumlah_responden || 0), 0)
+            setTotalResponses(count)
+          }
         })
 
         supabase.from('vw_unsur_summary').select('*').then(({ data }) => {
@@ -82,9 +92,6 @@ export default function HasilPage() {
         })
         supabase.from('vw_demographic_summary').select('*').then(({ data }) => {
           if (data) setDemoSummary(data as DemographicSummary[])
-        })
-        supabase.from('responses').select('*', { count: 'exact', head: true }).then(({ count }) => {
-          if (count !== null) setTotalResponses(count)
         })
       })
       .subscribe()

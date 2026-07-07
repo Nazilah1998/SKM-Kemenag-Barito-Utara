@@ -28,6 +28,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const cookie = document.cookie.split('; ').find((r) => r.startsWith('locale='))
     if (cookie) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setLocaleState(cookie.split('=')[1])
     }
   }, [])

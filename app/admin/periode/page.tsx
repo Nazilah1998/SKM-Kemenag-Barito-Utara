@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Plus, Pencil, Trash2, Loader2, Calendar } from 'lucide-react'
@@ -24,6 +24,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 import type { SurveyPeriod } from '@/types'
+import { setActivePeriodAction } from './actions'
 
 const periodSchema = z.object({
   period_type: z.enum(['triwulan', 'semester', 'tahunan']),
@@ -54,16 +55,12 @@ export default function AdminPeriodePage() {
 
   const supabase = createClient()
 
-  const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<PeriodForm>({
+  const { register, handleSubmit, reset, setValue, control, formState: { errors } } = useForm<PeriodForm>({
     resolver: zodResolver(periodSchema),
     defaultValues: { period_type: 'triwulan', label: '', start_date: '', end_date: '' },
   })
 
-  const pt = watch('period_type')
-
-  useEffect(() => {
-    setAutoPart('1')
-  }, [pt])
+  const pt = useWatch({ control, name: 'period_type' })
 
   function handleAutoGenerate() {
     const year = autoYear
@@ -103,7 +100,7 @@ export default function AdminPeriodePage() {
     setLoading(false)
   }
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps, react-hooks/set-state-in-effect
   useEffect(() => { fetchPeriods() }, [])
 
   function openCreate() {
@@ -161,9 +158,12 @@ export default function AdminPeriodePage() {
   async function setActive(id: string) {
     if (!confirm('Mengubah periode aktif akan menonaktifkan periode lainnya. Lanjutkan?')) return
     setSettingActive(true)
-    await supabase.from('survey_periods').update({ is_active: false }).neq('id', '')
-    const { error } = await supabase.from('survey_periods').update({ is_active: true }).eq('id', id)
-    if (error) { toast.error('Gagal mengaktifkan periode'); setSettingActive(false); return }
+    const result = await setActivePeriodAction(id)
+    if (!result.success) { 
+      toast.error(result.error || 'Gagal mengaktifkan periode')
+      setSettingActive(false)
+      return 
+    }
     toast.success('Periode aktif berhasil diubah')
     setSettingActive(false)
     fetchPeriods()
@@ -281,7 +281,7 @@ export default function AdminPeriodePage() {
             <div className="space-y-2">
               <Label>Tipe Periode</Label>
 
-              <Select value={watch('period_type')} onValueChange={(v) => v && setValue('period_type', v as 'triwulan' | 'semester' | 'tahunan')}>
+              <Select value={pt} onValueChange={(v) => { if(v){ setValue('period_type', v as 'triwulan' | 'semester' | 'tahunan'); setAutoPart('1'); } }}>
                 <SelectTrigger className="w-full">
                   <SelectValue />
                 </SelectTrigger>
