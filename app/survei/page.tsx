@@ -506,10 +506,10 @@ export default function SurveiPage() {
               <Card className="shadow-sm border border-gray-200 rounded-xl overflow-hidden bg-white">
                 <CardHeader className="text-center py-6">
                   <CardTitle className="text-xl md:text-2xl font-bold text-gray-900">{t('survey.ipkp_section')}</CardTitle>
-                  <CardDescription className="text-base font-semibold text-gray-700 mt-2 flex items-center justify-center gap-1.5 flex-wrap">
-                    Nilai 1 <Star className="size-4 fill-yellow-400 text-yellow-400 -mt-0.5" /> (Tidak Baik) 
-                    <span className="mx-1">-</span> 
-                    Nilai 4 <Star className="size-4 fill-yellow-400 text-yellow-400 -mt-0.5" /> (Sangat Baik)
+                  <CardDescription className="text-[11px] sm:text-sm md:text-base font-semibold text-gray-700 mt-2 flex items-center justify-center gap-1 sm:gap-1.5 whitespace-nowrap">
+                    <span className="flex items-center gap-0.5 sm:gap-1">Nilai 1 <Star className="size-3 md:size-4 fill-yellow-400 text-yellow-400 -mt-0.5" /> (Tidak Baik)</span>
+                    <span className="mx-0.5 sm:mx-1">-</span> 
+                    <span className="flex items-center gap-0.5 sm:gap-1">Nilai 4 <Star className="size-3 md:size-4 fill-yellow-400 text-yellow-400 -mt-0.5" /> (Sangat Baik)</span>
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-8">
@@ -554,10 +554,10 @@ export default function SurveiPage() {
               <Card className="shadow-sm border border-gray-200 rounded-xl overflow-hidden bg-white">
                 <CardHeader className="text-center py-6">
                   <CardTitle className="text-xl md:text-2xl font-bold text-gray-900">{t('survey.ipak_section')}</CardTitle>
-                  <CardDescription className="text-base font-semibold text-gray-700 mt-2 flex items-center justify-center gap-1.5 flex-wrap">
-                    Nilai 1 <Star className="size-4 fill-yellow-400 text-yellow-400 -mt-0.5" /> (Tidak Baik) 
-                    <span className="mx-1">-</span> 
-                    Nilai 4 <Star className="size-4 fill-yellow-400 text-yellow-400 -mt-0.5" /> (Sangat Baik)
+                  <CardDescription className="text-[11px] sm:text-sm md:text-base font-semibold text-gray-700 mt-2 flex items-center justify-center gap-1 sm:gap-1.5 whitespace-nowrap">
+                    <span className="flex items-center gap-0.5 sm:gap-1">Nilai 1 <Star className="size-3 md:size-4 fill-yellow-400 text-yellow-400 -mt-0.5" /> (Tidak Baik)</span>
+                    <span className="mx-0.5 sm:mx-1">-</span> 
+                    <span className="flex items-center gap-0.5 sm:gap-1">Nilai 4 <Star className="size-3 md:size-4 fill-yellow-400 text-yellow-400 -mt-0.5" /> (Sangat Baik)</span>
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-8">
