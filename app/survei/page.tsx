@@ -232,11 +232,11 @@ export default function SurveiPage() {
         .insert({
           id: responseId,
           service_id: formData.service_id,
-          period_id: period?.id,
+          period_id: period?.id || null,
           is_anonymous: formData.is_anonymous,
-          respondent_name: formData.respondent_name,
-          respondent_contact: formData.respondent_contact,
-          respondent_address: formData.respondent_address,
+          respondent_name: formData.is_anonymous ? 'Anonim' : (formData.respondent_name?.trim() || 'Anonim'),
+          respondent_contact: formData.is_anonymous ? '-' : (formData.respondent_contact?.trim() || '-'),
+          respondent_address: formData.respondent_address?.trim() || null,
           ipkp_feedback: ipkpFeedback.trim() || null,
           ipak_feedback: ipakFeedback.trim() || null,
           locale,
@@ -250,11 +250,15 @@ export default function SurveiPage() {
         return
       }
 
-      const demoEntries = Object.entries(demographics).map(([field_id, value]) => ({
-        response_id: responseId,
-        field_id,
-        value,
-      }))
+      const validFieldIds = new Set(demographicFields.map((f) => f.id))
+
+      const demoEntries = Object.entries(demographics)
+        .filter(([field_id, value]) => validFieldIds.has(field_id) && value !== undefined && value !== null && String(value).trim() !== '')
+        .map(([field_id, value]) => ({
+          response_id: responseId,
+          field_id,
+          value: String(value).trim(),
+        }))
 
       if (demoEntries.length > 0) {
         const { error: demoError } = await supabase.from('response_demographics').insert(demoEntries)
@@ -266,15 +270,18 @@ export default function SurveiPage() {
         }
       }
 
-      const answerEntries = Object.entries(answers).map(([questionId, ratingValue]) => {
-        const question = allQuestions.find((q) => q.id === questionId)
-        return {
-          response_id: responseId,
-          question_id: questionId,
-          unsur_id: question?.unsur_id || '',
-          rating_value: ratingValue,
-        }
-      })
+      const answerEntries = Object.entries(answers)
+        .filter(([qId, val]) => qId && val !== undefined && val !== null && val > 0)
+        .map(([questionId, ratingValue]) => {
+          const question = allQuestions.find((q) => q.id === questionId)
+          return {
+            response_id: responseId,
+            question_id: questionId,
+            unsur_id: question?.unsur_id || '',
+            rating_value: ratingValue,
+          }
+        })
+        .filter((entry) => entry.unsur_id !== '')
 
       if (answerEntries.length > 0) {
         const { error: answersError } = await supabase.from('response_answers').insert(answerEntries)
@@ -613,7 +620,6 @@ export default function SurveiPage() {
                                     handleDemographicChange(field.id, 'Ya')
                                   } else {
                                     handleDemographicChange(field.id, 'Tidak')
-                                    handleDemographicChange(`${field.id}_options`, '')
                                   }
                                 }}
                               />
@@ -633,8 +639,9 @@ export default function SurveiPage() {
                                 </p>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                                   {field.demographic_options.map((opt) => {
-                                    const key = `${field.id}_options`
-                                    const currentVals = (demographics[key] || '').split(',').filter(Boolean)
+                                    const currentValStr = demographics[field.id] || 'Ya'
+                                    const rawOptsStr = currentValStr.includes('(') ? currentValStr.slice(currentValStr.indexOf('(') + 1, currentValStr.lastIndexOf(')')) : ''
+                                    const currentVals = rawOptsStr ? rawOptsStr.split(', ').filter(Boolean) : []
                                     const isChecked = currentVals.includes(opt.value)
                                     return (
                                       <label key={opt.id} className="flex items-center gap-2.5 p-3 rounded-xl bg-white dark:bg-gray-900 border border-emerald-200/80 dark:border-emerald-900 cursor-pointer hover:bg-emerald-100/50 transition-colors shadow-2xs">
@@ -648,7 +655,8 @@ export default function SurveiPage() {
                                             } else {
                                               newVals = currentVals.filter(v => v !== opt.value)
                                             }
-                                            handleDemographicChange(key, newVals.join(','))
+                                            const updatedStr = newVals.length > 0 ? `Ya (${newVals.join(', ')})` : 'Ya'
+                                            handleDemographicChange(field.id, updatedStr)
                                           }}
                                           className="size-4 text-emerald-600 rounded focus:ring-emerald-500"
                                         />

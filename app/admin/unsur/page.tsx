@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -50,7 +50,7 @@ export default function AdminUnsurPage() {
   const [deleteDialog, setDeleteDialog] = useState<Unsur | null>(null)
   const [deleting, setDeleting] = useState(false)
 
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), [])
 
   const { register, handleSubmit, reset, setValue, control, formState: { errors } } = useForm<UnsurForm>({
     resolver: zodResolver(unsurSchema),
@@ -60,14 +60,23 @@ export default function AdminUnsurPage() {
   const indexType = useWatch({ control, name: 'index_type' })
   const isActive = useWatch({ control, name: 'is_active' })
 
-  async function fetchUnsur() {
+  const fetchUnsur = useCallback(async () => {
     const { data } = await supabase.from('unsur').select('*').order('sort_order')
     if (data) setUnsurList(data as Unsur[])
     setLoading(false)
-  }
+  }, [supabase])
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps, react-hooks/set-state-in-effect
-  useEffect(() => { fetchUnsur() }, [])
+  useEffect(() => {
+    let ignore = false
+    async function loadData() {
+      const { data } = await supabase.from('unsur').select('*').order('sort_order')
+      if (ignore) return
+      if (data) setUnsurList(data as Unsur[])
+      setLoading(false)
+    }
+    loadData()
+    return () => { ignore = true }
+  }, [supabase])
 
   function openCreate() {
     setEditing(null)
