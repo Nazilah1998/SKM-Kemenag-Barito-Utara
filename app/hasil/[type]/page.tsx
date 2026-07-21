@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  LineChart, Line, Legend,
+  LineChart, Line, Legend, PieChart, Pie, Cell,
 } from 'recharts'
 import { FileSpreadsheet, FileText, Filter } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -34,7 +34,6 @@ export default function HasilPage() {
   const [unsurSummary, setUnsurSummary] = useState<UnsurSummary[]>([])
   const [demoSummary, setDemoSummary] = useState<DemographicSummary[]>([])
   const [allServices, setAllServices] = useState<{ id: string, name: string }[]>([])
-  const [totalResponses, setTotalResponses] = useState(0)
   const [loading, setLoading] = useState(true)
   const [serviceFilter, setServiceFilter] = useState('all')
 
@@ -52,13 +51,7 @@ export default function HasilPage() {
       ])
 
       if (summaryRes.data) setSummary(summaryRes.data as IndexSummary[])
-      if (byServiceRes.data) {
-        setByService(byServiceRes.data as IndexByService[])
-        const count = (byServiceRes.data as IndexByService[])
-          .filter(item => item.index_type === 'IPKP')
-          .reduce((acc, item) => acc + (item.jumlah_responden || 0), 0)
-        setTotalResponses(count)
-      }
+      if (byServiceRes.data) setByService(byServiceRes.data as IndexByService[])
       if (trendRes.data) setTrend(trendRes.data as IndexTrend[])
       if (unsurRes.data) setUnsurSummary(unsurRes.data as UnsurSummary[])
       if (demoRes.data) setDemoSummary(demoRes.data as DemographicSummary[])
@@ -78,13 +71,7 @@ export default function HasilPage() {
           if (data) setSummary(data as IndexSummary[])
         })
         supabase.from('vw_index_summary_by_service').select('*').then(({ data }) => {
-          if (data) {
-            setByService(data as IndexByService[])
-            const count = (data as IndexByService[])
-              .filter(item => item.index_type === 'IPKP')
-              .reduce((acc, item) => acc + (item.jumlah_responden || 0), 0)
-            setTotalResponses(count)
-          }
+          if (data) setByService(data as IndexByService[])
         })
 
         supabase.from('vw_unsur_summary').select('*').then(({ data }) => {
@@ -101,41 +88,101 @@ export default function HasilPage() {
 
   const uniqueServices = Array.from(new Set(byService.map((s) => s.service_name))).sort()
 
-  const parseBarData = () => {
-    const ipkpByService = byService.filter((b) => b.index_type === 'IPKP')
-    const ipakByService = byService.filter((b) => b.index_type === 'IPAK')
-    
-    let allNames = [...new Set([...ipkpByService.map((b) => b.service_name), ...ipakByService.map((b) => b.service_name)])]
-    
+  const displayedServices = serviceFilter === 'all'
+    ? allServices
+    : allServices.filter(s => s.name === serviceFilter)
+
+  const currentByService = serviceFilter === 'all'
+    ? byService.filter(item => item.index_type === indexType)
+    : byService.filter(item => item.index_type === indexType && item.service_name === serviceFilter)
+
+  const activeTotalResponses = currentByService.reduce((acc, item) => acc + (item.jumlah_responden || 0), 0)
+
+  const parseUnsurBarData = () => {
+    let filtered = unsurSummary.filter((u) => u.index_type === indexType)
     if (serviceFilter !== 'all') {
-      allNames = allNames.filter((name) => name === serviceFilter)
+      filtered = filtered.filter((u) => u.service_name === serviceFilter)
     }
 
-    return allNames.map((name) => {
-      const ipkpEntry = ipkpByService.find((b) => b.service_name === name)
-      const ipakEntry = ipakByService.find((b) => b.service_name === name)
+    const grouped = new Map<string, { total: number, count: number }>()
+    for (const item of filtered) {
+      const shortName = item.unsur_name.length > 18 ? `${item.unsur_name.substring(0, 16)}...` : item.unsur_name
+      if (!grouped.has(shortName)) {
+        grouped.set(shortName, { total: 0, count: 0 })
+      }
+      const g = grouped.get(shortName)!
+      g.total += Number(item.total_nilai) || 0
+      g.count += Number(item.jumlah_responden) || 0
+    }
+
+    return Array.from(grouped.entries()).map(([name, data]) => {
+      const avg = data.count > 0 ? data.total / data.count : 0
+      const konversi = avg * 25
       return {
         name,
-        IPKP: ipkpEntry?.nilai_konversi || 0,
-        IPAK: ipakEntry?.nilai_konversi || 0,
+        'Nilai Konversi': Number(konversi.toFixed(2)),
       }
     })
   }
 
+  const parseTrendData = () => {
+    return trend.map((t) => {
+      let dateLabel = t.bulan
+      try {
+        const d = new Date(t.bulan)
+        if (!isNaN(d.getTime())) {
+          dateLabel = d.toLocaleDateString('id-ID', { month: 'short', year: 'numeric' })
+        }
+      } catch {
+        dateLabel = t.bulan
+      }
+      return {
+        ...t,
+        bulanLabel: dateLabel,
+        'Nilai Konversi': Number((t.nilai_konversi || 0).toFixed(2)),
+      }
+    })
+  }
+
+  const parsePieData = () => {
+    let filtered = demoSummary
+    if (serviceFilter !== 'all') {
+      filtered = filtered.filter((d) => d.service_name === serviceFilter)
+    }
+
+    const genderData = filtered.filter((d) => d.field_key.toLowerCase() === 'jenis_kelamin')
+    const map = new Map<string, number>()
+    for (const item of genderData) {
+      const val = item.demographic_value || 'Lainnya'
+      map.set(val, (map.get(val) || 0) + Number(item.count || 0))
+    }
+
+    if (map.size === 0) {
+      return [
+        { name: 'Laki-laki', value: activeTotalResponses > 0 ? activeTotalResponses : 1 },
+        { name: 'Perempuan', value: 0 },
+      ]
+    }
+
+    return Array.from(map.entries()).map(([name, value]) => ({ name, value }))
+  }
+
+  const PIE_COLORS = ['#10b981', '#06b6d4', '#f59e0b', '#f43f5e', '#8b5cf6', '#3b82f6']
+
   const getMutuDescription = (mutu: string) => {
-    if (!mutu || mutu === '-') return 'Belum Terisi Survey'
+    if (!mutu || mutu === '-') return 'Belum Terisi'
     switch (mutu) {
       case 'A': return 'Sangat Baik'
       case 'B': return 'Baik'
       case 'C': return 'Kurang Baik'
       case 'D': return 'Tidak Baik'
-      default: return 'Belum Terisi Survey'
+      default: return 'Belum Terisi'
     }
   }
 
   async function handleExportExcel() {
     try {
-      await exportToExcel(summary, byService, totalResponses)
+      await exportToExcel(summary, byService, activeTotalResponses)
       toast.success('Berhasil mengekspor ke Excel')
     } catch {
       toast.error('Gagal mengekspor Excel')
@@ -144,7 +191,7 @@ export default function HasilPage() {
 
   async function handleExportPdf() {
     try {
-      await exportToPdf(summary, byService, totalResponses)
+      await exportToPdf(summary, byService, activeTotalResponses)
       toast.success('Berhasil mengekspor ke PDF')
     } catch {
       toast.error('Gagal mengekspor PDF')
@@ -154,105 +201,127 @@ export default function HasilPage() {
   return (
     <>
       <PublicNavbar />
-      <main className="flex-1 bg-gray-50/50">
-        <div className="mx-auto w-full px-6 sm:px-10 lg:px-16 xl:px-20 pt-8 pb-16">
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-8">
+      <main className="flex-1 bg-slate-50/60 dark:bg-gray-950 pb-12">
+        <div className="mx-auto w-full px-4 sm:px-8 lg:px-12 xl:px-16 pt-8 pb-12">
+          {/* Header Bar */}
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-8 bg-white dark:bg-gray-900 p-6 rounded-3xl border border-slate-200/80 dark:border-gray-800 shadow-xl shadow-slate-200/40 dark:shadow-black/20">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Hasil Survei {pageTitle}</h1>
-              <p className="text-sm text-gray-500 mt-1">{t('home.total_responses')}: <span className="font-semibold text-emerald-600">{totalResponses.toLocaleString()}</span></p>
+              <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">Hasil Survei {pageTitle}</h1>
+              <p className="text-xs sm:text-sm text-slate-500 font-medium mt-1">
+                {t('home.total_responses')}: <span className="font-extrabold text-emerald-600 dark:text-emerald-400">{activeTotalResponses.toLocaleString()} Responden</span>
+              </p>
             </div>
             
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
               {/* Filter Layanan */}
-              <div className="flex items-center w-full sm:w-[350px]">
-                <div className="bg-emerald-50 border border-emerald-100 rounded-l-md px-3 py-2 flex items-center justify-center border-r-0 h-10">
+              <div className="flex items-center w-full sm:w-[320px]">
+                <div className="bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200/80 dark:border-emerald-800 rounded-l-2xl px-3.5 py-2.5 flex items-center justify-center border-r-0 h-11 shrink-0">
                   <Filter className="size-4 text-emerald-600" />
                 </div>
                 <Select value={serviceFilter} onValueChange={(v) => v !== null && setServiceFilter(v)}>
-                  <SelectTrigger className="w-full bg-white border-gray-200 rounded-l-none h-10">
+                  <SelectTrigger className="w-full bg-white dark:bg-gray-900 border-slate-200 dark:border-gray-700 rounded-l-none rounded-r-2xl h-11 font-semibold text-xs sm:text-sm">
                     <SelectValue placeholder={t('results.filter_service')}>
                       {serviceFilter === 'all' ? t('results.all_services') : serviceFilter}
                     </SelectValue>
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">{t('results.all_services')}</SelectItem>
+                  <SelectContent className="rounded-2xl p-1 shadow-xl max-h-72">
+                    <SelectItem value="all" className="rounded-xl font-bold">{t('results.all_services')}</SelectItem>
                     {uniqueServices.map((s) => (
-                      <SelectItem key={s} value={s}>{s}</SelectItem>
+                      <SelectItem key={s} value={s} className="rounded-xl font-medium">{s}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
 
-              <div className="flex items-center gap-2 w-full sm:w-auto">
-                <Button variant="outline" size="sm" onClick={handleExportExcel} className="h-10 border-emerald-200 text-emerald-700 hover:bg-emerald-50 hover:text-emerald-800 flex-1 sm:flex-auto">
-                  <FileSpreadsheet className="mr-2 size-4" />
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" onClick={handleExportExcel} className="h-11 rounded-2xl border-slate-200 dark:border-gray-700 text-emerald-700 dark:text-emerald-300 font-bold hover:bg-emerald-50 dark:hover:bg-emerald-950 cursor-pointer">
+                  <FileSpreadsheet className="mr-2 size-4 text-emerald-600" />
                   {t('results.export_excel')}
                 </Button>
-                <Button variant="outline" size="sm" onClick={handleExportPdf} className="h-10 border-emerald-200 text-emerald-700 hover:bg-emerald-50 hover:text-emerald-800 flex-1 sm:flex-auto">
-                  <FileText className="mr-2 size-4" />
+                <Button variant="outline" size="sm" onClick={handleExportPdf} className="h-11 rounded-2xl border-slate-200 dark:border-gray-700 text-emerald-700 dark:text-emerald-300 font-bold hover:bg-emerald-50 dark:hover:bg-emerald-950 cursor-pointer">
+                  <FileText className="mr-2 size-4 text-emerald-600" />
                   {t('results.export_pdf')}
                 </Button>
               </div>
             </div>
           </div>
 
-          <Card className="mb-12 shadow-lg border-0 bg-white overflow-hidden">
-            <CardHeader className="border-b bg-gray-50/50 py-4">
-              <CardTitle className="text-center text-base md:text-lg text-gray-800 font-medium uppercase leading-snug">
+          {/* Main Table Card */}
+          <Card className="mb-10 border border-slate-200/80 dark:border-gray-800 shadow-xl shadow-slate-200/40 dark:shadow-black/20 bg-white dark:bg-gray-900 rounded-3xl overflow-hidden">
+            <CardHeader className="border-b border-slate-100 dark:border-gray-800 bg-slate-50/50 dark:bg-gray-800/40 p-6">
+              <CardTitle className="text-center text-sm sm:text-base text-slate-900 dark:text-white font-extrabold uppercase tracking-wide leading-relaxed">
                 Rekapitulasi Data Survei {tableTitle} Per Layanan<br/>
-                KANTOR KEMENTERIAN AGAMA KABUPATEN BARITO UTARA TAHUN 2026
+                <span className="text-xs text-emerald-600 dark:text-emerald-400 font-bold">KANTOR KEMENTERIAN AGAMA KABUPATEN BARITO UTARA TAHUN 2026</span>
               </CardTitle>
             </CardHeader>
             <div className="overflow-x-auto">
               <Table>
-                <TableHeader>
-                  <TableRow className="bg-gray-50 hover:bg-gray-50">
-                    <TableHead className="w-[60px] font-bold text-gray-900 text-center">NO</TableHead>
-                    <TableHead className="font-bold text-gray-900">Nama Layanan</TableHead>
-                    <TableHead className="text-center font-bold text-gray-900 whitespace-nowrap">Nilai Indeks Pelayanan</TableHead>
-                    <TableHead className="text-center font-bold text-gray-900">Konversi</TableHead>
-                    <TableHead className="text-center font-bold text-gray-900 whitespace-nowrap">Mutu Pelayanan</TableHead>
-                    <TableHead className="text-center font-bold text-gray-900 whitespace-nowrap">Jumlah Responden</TableHead>
+                <TableHeader className="bg-slate-50/80 dark:bg-gray-800/60">
+                  <TableRow className="border-b border-slate-100 dark:border-gray-800">
+                    <TableHead className="w-14 font-extrabold text-slate-700 uppercase tracking-wider text-center">NO</TableHead>
+                    <TableHead className="font-extrabold text-slate-700 uppercase tracking-wider">Nama Layanan</TableHead>
+                    <TableHead className="text-center font-extrabold text-slate-700 uppercase tracking-wider whitespace-nowrap">Nilai Indeks</TableHead>
+                    <TableHead className="text-center font-extrabold text-slate-700 uppercase tracking-wider">Konversi</TableHead>
+                    <TableHead className="text-center font-extrabold text-slate-700 uppercase tracking-wider whitespace-nowrap">Mutu Pelayanan</TableHead>
+                    <TableHead className="text-center font-extrabold text-slate-700 uppercase tracking-wider whitespace-nowrap">Jumlah Responden</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {loading ? (
                     <TableRow>
-                      <TableCell colSpan={6} className="h-32 text-center text-muted-foreground">
-                        Memuat data...
+                      <TableCell colSpan={6} className="h-32 text-center text-slate-400 font-medium">
+                        Memuat data survei...
                       </TableCell>
                     </TableRow>
-                  ) : allServices.length === 0 ? (
+                  ) : displayedServices.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={6} className="h-32 text-center text-muted-foreground">
+                      <TableCell colSpan={6} className="h-32 text-center text-slate-400 font-medium">
                         Belum ada layanan aktif
                       </TableCell>
                     </TableRow>
                   ) : (
-                    allServices
-                      .map((service, i) => {
-                        const item = byService.find(b => b.service_id === service.id && b.index_type === indexType)
-                        const hasData = item && item.jumlah_responden > 0
-                        return (
-                          <TableRow key={service.id} className="hover:bg-gray-50/50">
-                            <TableCell className="text-center">{i + 1}</TableCell>
-                            <TableCell className="font-medium text-gray-700 min-w-[250px]">
-                              {service.name}
-                            </TableCell>
-                            <TableCell className="text-center font-medium">
-                              {hasData ? `${item.nilai_index.toFixed(2)} (${getMutuDescription(item.mutu)})` : '0.00 (Belum Terisi Survey)'}
-                            </TableCell>
-                            <TableCell className="text-center">
-                              {hasData ? item.nilai_konversi.toFixed(2) : '0.00'}
-                            </TableCell>
-                            <TableCell className="text-center font-bold">
-                              {hasData ? `${item.mutu} (${getMutuDescription(item.mutu)})` : 'Belum Terisi Survey'}
-                            </TableCell>
-                            <TableCell className="text-center">
-                              {item ? item.jumlah_responden : 0} {item && item.jumlah_responden > 0 ? 'Orang' : ''}
-                            </TableCell>
-                          </TableRow>
-                        )
+                    displayedServices.map((service, i) => {
+                      const item = byService.find(b => b.service_id === service.id && b.index_type === indexType)
+                      const hasData = item && item.jumlah_responden > 0
+                      const mutuText = getMutuDescription(item?.mutu || '')
+
+                      return (
+                        <TableRow key={service.id} className="hover:bg-slate-50/80 dark:hover:bg-gray-800/50 transition-colors">
+                          <TableCell className="text-center font-mono font-bold text-slate-400 text-xs">{i + 1}</TableCell>
+                          <TableCell className="font-bold text-slate-800 dark:text-slate-200 text-xs sm:text-sm">
+                            {service.name}
+                          </TableCell>
+                          <TableCell className="text-center font-bold text-xs sm:text-sm">
+                            {hasData ? item.nilai_index.toFixed(2) : '0.00'}
+                          </TableCell>
+                          <TableCell className="text-center font-mono font-extrabold text-xs sm:text-sm text-emerald-700 dark:text-emerald-400">
+                            {hasData ? item.nilai_konversi.toFixed(2) : '0.00'}
+                          </TableCell>
+                          <TableCell className="text-center">
+                            {hasData ? (
+                              <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-extrabold ${
+                                item.mutu === 'A' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
+                                item.mutu === 'B' ? 'bg-cyan-50 text-cyan-700 border border-cyan-200' :
+                                item.mutu === 'C' ? 'bg-amber-50 text-amber-700 border border-amber-200' :
+                                'bg-rose-50 text-rose-700 border border-rose-200'
+                              }`}>
+                                {item.mutu} ({mutuText})
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-500">
+                                Belum Terisi
+                              </span>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-center font-bold text-xs">
+                            {item ? (
+                              <span className={item.jumlah_responden > 0 ? 'text-emerald-700 font-black' : 'text-slate-400'}>
+                                {item.jumlah_responden} Orang
+                              </span>
+                            ) : '0 Orang'}
+                          </TableCell>
+                        </TableRow>
+                      )
                     })
                   )}
                 </TableBody>
@@ -260,7 +329,7 @@ export default function HasilPage() {
             </div>
           </Card>
 
-          <div className="mb-12 space-y-12">
+          <div className="mb-10 space-y-10">
             <DetailedBreakdown 
               indexType={indexType} 
               serviceFilter={serviceFilter} 
@@ -271,46 +340,86 @@ export default function HasilPage() {
             />
           </div>
 
-          <div className="mb-8 grid gap-6 lg:grid-cols-2">
-            <Card className="shadow-lg border-0 bg-white">
-              <CardHeader className="border-b bg-gray-50/50">
-                <CardTitle>{t('results.breakdown')}</CardTitle>
+          <div className="mb-8 grid gap-6 grid-cols-1 lg:grid-cols-3">
+            {/* Chart 1: Rincian Per Unsur (Bar Chart) */}
+            <Card className="lg:col-span-2 border border-slate-200/80 dark:border-gray-800 shadow-xl shadow-slate-200/40 dark:shadow-black/20 bg-white dark:bg-gray-900 rounded-3xl overflow-hidden">
+              <CardHeader className="border-b border-slate-100 dark:border-gray-800 bg-slate-50/50 dark:bg-gray-800/40 p-5">
+                <CardTitle className="text-sm font-extrabold text-slate-900 dark:text-white">
+                  Rincian Nilai Konversi Per Unsur ({indexType})
+                </CardTitle>
+                <p className="text-xs text-slate-400 font-medium mt-0.5">Nilai rata-rata konversi (skala 0 - 100) untuk tiap unsur indikator</p>
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-5">
                 {loading ? (
-                  <div className="h-64 animate-pulse rounded bg-gray-200" />
+                  <div className="h-64 animate-pulse rounded-2xl bg-slate-100 dark:bg-gray-800" />
                 ) : (
-                  <ResponsiveContainer width="100%" height={300}>
-                    <BarChart data={parseBarData()}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-                      <YAxis domain={[0, 4]} />
-                      <Tooltip />
-                      <Bar dataKey="IPKP" fill="#059669" radius={[4, 4, 0, 0]} />
-                      <Bar dataKey="IPAK" fill="#3b82f6" radius={[4, 4, 0, 0]} />
-                      <Legend />
+                  <ResponsiveContainer width="100%" height={320}>
+                    <BarChart data={parseUnsurBarData()}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
+                      <XAxis dataKey="name" tick={{ fontSize: 10, fontWeight: 700 }} interval={0} angle={-15} textAnchor="end" height={60} />
+                      <YAxis domain={[0, 100]} tick={{ fontSize: 11, fontWeight: 600 }} />
+                      <Tooltip contentStyle={{ borderRadius: '16px', fontWeight: 600, boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1)' }} />
+                      <Bar dataKey="Nilai Konversi" fill="#10b981" radius={[8, 8, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 )}
               </CardContent>
             </Card>
 
-            <Card className="shadow-lg border-0 bg-white">
-              <CardHeader className="border-b bg-gray-50/50">
-                <CardTitle>{t('results.trend')}</CardTitle>
-                <p className="text-xs text-muted-foreground font-normal mt-1">Menampilkan tren global keseluruhan</p>
+            {/* Chart 2: Chart Lingkaran (Pie / Donut Chart) */}
+            <Card className="border border-slate-200/80 dark:border-gray-800 shadow-xl shadow-slate-200/40 dark:shadow-black/20 bg-white dark:bg-gray-900 rounded-3xl overflow-hidden">
+              <CardHeader className="border-b border-slate-100 dark:border-gray-800 bg-slate-50/50 dark:bg-gray-800/40 p-5">
+                <CardTitle className="text-sm font-extrabold text-slate-900 dark:text-white">
+                  Proporsi Responden (Gender)
+                </CardTitle>
+                <p className="text-xs text-slate-400 font-medium mt-0.5">Persentase sebaran responden yang berpartisipasi</p>
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-5 flex flex-col items-center justify-center">
                 {loading ? (
-                  <div className="h-64 animate-pulse rounded bg-gray-200" />
+                  <div className="h-64 animate-pulse rounded-2xl bg-slate-100 dark:bg-gray-800 w-full" />
+                ) : (
+                  <ResponsiveContainer width="100%" height={320}>
+                    <PieChart>
+                      <Pie
+                        data={parsePieData()}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={65}
+                        outerRadius={95}
+                        paddingAngle={5}
+                        dataKey="value"
+                      >
+                        {parsePieData().map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip contentStyle={{ borderRadius: '16px', fontWeight: 600 }} />
+                      <Legend verticalAlign="bottom" height={36} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Chart 3: Tren Nilai Bulanan (Line Chart) */}
+          <div className="mb-8">
+            <Card className="border border-slate-200/80 dark:border-gray-800 shadow-xl shadow-slate-200/40 dark:shadow-black/20 bg-white dark:bg-gray-900 rounded-3xl overflow-hidden">
+              <CardHeader className="border-b border-slate-100 dark:border-gray-800 bg-slate-50/50 dark:bg-gray-800/40 p-5">
+                <CardTitle className="text-sm font-extrabold text-slate-900 dark:text-white">{t('results.trend')}</CardTitle>
+                <p className="text-xs text-slate-400 font-medium mt-0.5">Menampilkan tren perkembangan indeks konversi secara berkala</p>
+              </CardHeader>
+              <CardContent className="p-5">
+                {loading ? (
+                  <div className="h-64 animate-pulse rounded-2xl bg-slate-100 dark:bg-gray-800" />
                 ) : (
                   <ResponsiveContainer width="100%" height={300}>
-                    <LineChart data={trend}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="bulan" tick={{ fontSize: 12 }} />
-                      <YAxis domain={[0, 4]} />
-                      <Tooltip />
-                      <Line type="monotone" dataKey="nilai_konversi" stroke="#059669" strokeWidth={2} dot={{ fill: '#059669' }} />
+                    <LineChart data={parseTrendData()}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
+                      <XAxis dataKey="bulanLabel" tick={{ fontSize: 11, fontWeight: 700 }} />
+                      <YAxis domain={[0, 100]} tick={{ fontSize: 11, fontWeight: 600 }} />
+                      <Tooltip contentStyle={{ borderRadius: '16px', fontWeight: 600 }} />
+                      <Line type="monotone" dataKey="Nilai Konversi" stroke="#0d9488" strokeWidth={3} dot={{ fill: '#0d9488', r: 6 }} />
                       <Legend />
                     </LineChart>
                   </ResponsiveContainer>

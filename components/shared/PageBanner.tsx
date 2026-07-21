@@ -26,14 +26,17 @@ export default function PageBanner({
   children
 }: PageBannerProps) {
   return (
-    <section className="relative w-full overflow-hidden bg-gradient-to-br from-emerald-700 via-emerald-600 to-teal-500 py-16 text-white md:py-24">
-      {/* Decorative background elements */}
-      <div className="absolute top-0 right-0 -mr-20 -mt-20 size-72 rounded-full bg-white/5 blur-3xl"></div>
-      <div className="absolute bottom-0 left-0 -ml-20 -mb-20 size-72 rounded-full bg-white/10 blur-3xl"></div>
+    <section className="relative w-full overflow-hidden bg-gradient-to-br from-emerald-950 via-emerald-900 to-teal-950 py-16 text-white md:py-24">
+      {/* Mesh Grid Pattern Overlay */}
+      <div className="absolute inset-0 bg-[radial-gradient(#ffffff15_1px,transparent_1px)] [background-size:24px_24px] opacity-40 pointer-events-none" />
 
-      <div className="relative mx-auto w-full px-6 sm:px-10 lg:px-16 xl:px-20 text-center flex flex-col items-center">
+      {/* Decorative background glow circles */}
+      <div className="absolute top-0 right-10 -mt-20 size-96 rounded-full bg-emerald-500/20 blur-3xl pointer-events-none" />
+      <div className="absolute bottom-0 left-10 -mb-20 size-96 rounded-full bg-teal-400/20 blur-3xl pointer-events-none" />
+
+      <div className="relative mx-auto w-full px-6 sm:px-10 lg:px-16 xl:px-20 text-center flex flex-col items-center z-10">
         {breadcrumb && breadcrumb.length > 0 && (
-          <nav className="mb-6 flex flex-wrap items-center justify-center gap-2 text-sm text-emerald-100/80">
+          <nav className="mb-6 flex flex-wrap items-center justify-center gap-2 text-sm text-emerald-200/80">
             {breadcrumb.map((item, index) => (
               <React.Fragment key={index}>
                 {item.href ? (
@@ -55,18 +58,19 @@ export default function PageBanner({
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="max-w-3xl"
+          className="max-w-4xl"
         >
           {eyebrow && (
-            <span className="mb-3 block text-sm font-semibold uppercase tracking-wider text-teal-200">
+            <span className="mb-4 inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 border border-white/20 text-xs font-extrabold uppercase tracking-widest text-emerald-200 backdrop-blur-md shadow-xs">
+              <span className="size-2 rounded-full bg-emerald-400 animate-pulse" />
               {eyebrow}
             </span>
           )}
-          <h1 className="text-4xl font-bold tracking-tight md:text-5xl lg:text-6xl text-balance">
+          <h1 className="text-4xl font-black tracking-tight md:text-5xl lg:text-6xl text-balance leading-tight text-white">
             {title}
           </h1>
           {description && (
-            <p className="mx-auto mt-6 text-lg text-emerald-50/90 text-balance md:text-xl">
+            <p className="mx-auto mt-6 text-base text-emerald-100/90 text-balance md:text-lg font-medium leading-relaxed max-w-2xl">
               {description}
             </p>
           )}

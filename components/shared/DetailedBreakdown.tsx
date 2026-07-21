@@ -103,47 +103,47 @@ export function DetailedBreakdown({ indexType, serviceFilter, summary, byService
     <div className="space-y-6 animate-in fade-in duration-300">
       
       {/* Table Unsur */}
-      <Card className="shadow-lg border-0 bg-white overflow-hidden">
-        <CardHeader className="border-b bg-gray-50/50">
-          <CardTitle className="text-center text-lg text-gray-800 leading-snug">
+      <Card className="border border-slate-200/80 dark:border-gray-800 shadow-xl shadow-slate-200/40 dark:shadow-black/20 bg-white dark:bg-gray-900 rounded-3xl overflow-hidden">
+        <CardHeader className="border-b border-slate-100 dark:border-gray-800 bg-slate-50/50 dark:bg-gray-800/40 p-6">
+          <CardTitle className="text-center text-sm sm:text-base text-slate-900 dark:text-white font-extrabold uppercase leading-relaxed">
             Rekapitulasi Nilai Survei {indexType === 'IPKP' ? 'Indeks Persepsi Kualitas Pelayanan (IPKP)' : 'Indeks Persepsi Anti Korupsi (IPAK)'}
-            <br/><span className="text-sm font-normal text-gray-500">{serviceFilter === 'all' ? 'Semua Layanan' : serviceFilter}</span>
+            <br/><span className="text-xs text-emerald-600 dark:text-emerald-400 font-bold">{serviceFilter === 'all' ? 'Semua Layanan' : serviceFilter}</span>
           </CardTitle>
         </CardHeader>
         <div className="overflow-x-auto">
           <Table>
-            <TableHeader>
-              <TableRow className="bg-gray-50 hover:bg-gray-50">
-                <TableHead className="w-[50px] font-bold text-gray-900 text-center">No</TableHead>
-                <TableHead className="font-bold text-gray-900">Unsur</TableHead>
-                <TableHead className="text-center font-bold text-gray-900">Jumlah Pertanyaan</TableHead>
-                <TableHead className="text-center font-bold text-gray-900">Total Nilai</TableHead>
-                <TableHead className="text-center font-bold text-gray-900 border-x">Nilai Rata-Rata Unsur</TableHead>
-                <TableHead className="text-center font-bold text-gray-900 border-x">Nilai Rata-Rata Tertimbang Unsur</TableHead>
+            <TableHeader className="bg-slate-50/80 dark:bg-gray-800/60">
+              <TableRow className="border-b border-slate-100 dark:border-gray-800">
+                <TableHead className="w-14 font-extrabold text-slate-700 uppercase tracking-wider text-center">No</TableHead>
+                <TableHead className="font-extrabold text-slate-700 uppercase tracking-wider">Unsur</TableHead>
+                <TableHead className="text-center font-extrabold text-slate-700 uppercase tracking-wider">Jumlah Pertanyaan</TableHead>
+                <TableHead className="text-center font-extrabold text-slate-700 uppercase tracking-wider">Total Nilai</TableHead>
+                <TableHead className="text-center font-extrabold text-slate-700 uppercase tracking-wider border-x border-slate-100 dark:border-gray-800">Nilai Rata-Rata Unsur</TableHead>
+                <TableHead className="text-center font-extrabold text-slate-700 uppercase tracking-wider border-x border-slate-100 dark:border-gray-800">Nilai Rata-Rata Tertimbang Unsur</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {unsurData.map((u, i) => (
-                <TableRow key={i}>
-                  <TableCell className="text-center">{i + 1}</TableCell>
-                  <TableCell>{u.unsur_name}</TableCell>
-                  <TableCell className="text-center">{u.jumlah_pertanyaan}</TableCell>
-                  <TableCell className="text-center">{u.total_nilai}</TableCell>
-                  <TableCell className="text-center">{u.rataRata.toFixed(2)}</TableCell>
-                  <TableCell className="text-center">{u.tertimbang.toFixed(2)}</TableCell>
+                <TableRow key={i} className="hover:bg-slate-50/80 dark:hover:bg-gray-800/50 transition-colors">
+                  <TableCell className="text-center font-mono font-bold text-slate-400 text-xs">{i + 1}</TableCell>
+                  <TableCell className="font-bold text-slate-800 dark:text-slate-200 text-xs sm:text-sm">{u.unsur_name}</TableCell>
+                  <TableCell className="text-center font-bold text-xs">{u.jumlah_pertanyaan}</TableCell>
+                  <TableCell className="text-center font-bold text-xs">{u.total_nilai}</TableCell>
+                  <TableCell className="text-center font-mono font-bold text-xs">{u.rataRata.toFixed(2)}</TableCell>
+                  <TableCell className="text-center font-mono font-bold text-xs text-emerald-700 dark:text-emerald-400">{u.tertimbang.toFixed(2)}</TableCell>
                 </TableRow>
               ))}
-              <TableRow className="bg-gray-50 hover:bg-gray-50">
-                <TableCell colSpan={5} className="text-center text-gray-700">Indeks Survei {indexType === 'IPKP' ? 'Indeks Persepsi Kualitas Pelayanan (IPKP)' : 'Indeks Persepsi Anti Korupsi (IPAK)'}</TableCell>
-                <TableCell className="text-center font-bold">{scoreData.nilai_index.toFixed(2)} ({locale === 'id' ? NILAI_MUTU[scoreData.mutu]?.label_id : NILAI_MUTU[scoreData.mutu]?.label_en})</TableCell>
+              <TableRow className="bg-slate-50/80 dark:bg-gray-800/60 font-extrabold text-xs">
+                <TableCell colSpan={5} className="text-center text-slate-700 dark:text-slate-300">Indeks Survei {indexType === 'IPKP' ? 'Indeks Persepsi Kualitas Pelayanan (IPKP)' : 'Indeks Persepsi Anti Korupsi (IPAK)'}</TableCell>
+                <TableCell className="text-center text-emerald-700 dark:text-emerald-400">{scoreData.nilai_index.toFixed(2)} ({locale === 'id' ? NILAI_MUTU[scoreData.mutu]?.label_id : NILAI_MUTU[scoreData.mutu]?.label_en})</TableCell>
               </TableRow>
-              <TableRow className="bg-gray-50 hover:bg-gray-50">
-                <TableCell colSpan={5} className="text-center text-gray-700">Konversi</TableCell>
-                <TableCell className="text-center font-bold">{scoreData.konversi.toFixed(2)}</TableCell>
+              <TableRow className="bg-slate-50/80 dark:bg-gray-800/60 font-extrabold text-xs">
+                <TableCell colSpan={5} className="text-center text-slate-700 dark:text-slate-300">Konversi</TableCell>
+                <TableCell className="text-center text-emerald-700 dark:text-emerald-400">{scoreData.konversi.toFixed(2)}</TableCell>
               </TableRow>
-              <TableRow className="bg-gray-50 hover:bg-gray-50">
-                <TableCell colSpan={5} className="text-center text-gray-700">Mutu Pelayanan</TableCell>
-                <TableCell className="text-center font-bold">{scoreData.mutu} ({locale === 'id' ? NILAI_MUTU[scoreData.mutu]?.label_id : NILAI_MUTU[scoreData.mutu]?.label_en})</TableCell>
+              <TableRow className="bg-slate-50/80 dark:bg-gray-800/60 font-extrabold text-xs">
+                <TableCell colSpan={5} className="text-center text-slate-700 dark:text-slate-300">Mutu Pelayanan</TableCell>
+                <TableCell className="text-center text-emerald-700 dark:text-emerald-400">{scoreData.mutu} ({locale === 'id' ? NILAI_MUTU[scoreData.mutu]?.label_id : NILAI_MUTU[scoreData.mutu]?.label_en})</TableCell>
               </TableRow>
             </TableBody>
           </Table>
@@ -151,49 +151,50 @@ export function DetailedBreakdown({ indexType, serviceFilter, summary, byService
       </Card>
 
       {/* Unified Score and Demographics Card */}
-      <Card className="shadow-lg border-0 bg-white overflow-hidden rounded-xl border-blue-200 border-[1px]">
-        <div className="text-center py-6 px-4 bg-white">
-          <h2 className="text-lg md:text-xl font-normal text-gray-800 uppercase leading-snug">
+      <Card className="border border-slate-200/80 dark:border-gray-800 shadow-xl shadow-slate-200/40 dark:shadow-black/20 bg-white dark:bg-gray-900 rounded-3xl overflow-hidden">
+        <div className="text-center py-6 px-4 bg-slate-50/50 dark:bg-gray-800/40 border-b border-slate-100 dark:border-gray-800">
+          <h2 className="text-base sm:text-lg font-black text-slate-900 dark:text-white uppercase leading-relaxed">
             Survei {indexType === 'IPKP' ? 'Indeks Persepsi Kualitas Pelayanan (IPKP)' : 'Indeks Persepsi Anti Korupsi (IPAK)'}<br/>
-            KANTOR KEMENTERIAN AGAMA KABUPATEN BARITO UTARA<br/>
-            Tahun 2026
+            <span className="text-xs text-emerald-600 dark:text-emerald-400 font-bold">KANTOR KEMENTERIAN AGAMA KABUPATEN BARITO UTARA TAHUN 2026</span>
           </h2>
         </div>
         
-        <div className="flex w-full bg-red-600 text-white font-bold text-sm md:text-base">
-          <div className="w-full md:w-1/2 text-center py-3 px-4 border-r border-red-500/30 uppercase">
+        <div className="flex flex-col sm:flex-row w-full bg-gradient-to-r from-emerald-700 via-teal-700 to-emerald-800 text-white font-extrabold text-xs sm:text-sm">
+          <div className="w-full sm:w-1/2 text-center py-3 px-4 border-b sm:border-b-0 sm:border-r border-white/20 uppercase tracking-wide">
             Nilai Survei {indexType === 'IPKP' ? 'Indeks Persepsi Kualitas Pelayanan (IPKP)' : 'Indeks Persepsi Anti Korupsi (IPAK)'}
           </div>
-          <div className="w-full md:w-1/2 text-center py-3 px-4 uppercase">
+          <div className="w-full sm:w-1/2 text-center py-3 px-4 uppercase tracking-wide">
             {serviceFilter === 'all' ? 'Semua Pelayanan' : serviceFilter}
           </div>
         </div>
 
         <div className="flex flex-col md:flex-row">
-          <div className="w-full md:w-1/2 p-8 md:p-16 flex flex-col items-center justify-center border-b md:border-b-0 md:border-r border-gray-100">
-            <h3 className="text-7xl md:text-[100px] font-black text-gray-900 mb-6 tracking-tighter leading-none">{scoreData.konversi.toFixed(2)}</h3>
-            <p className="text-2xl md:text-3xl font-bold text-gray-800">{scoreData.mutu} ({locale === 'id' ? NILAI_MUTU[scoreData.mutu]?.label_id : NILAI_MUTU[scoreData.mutu]?.label_en})</p>
+          <div className="w-full md:w-1/2 p-8 md:p-12 flex flex-col items-center justify-center border-b md:border-b-0 md:border-r border-slate-100 dark:border-gray-800">
+            <h3 className="text-6xl md:text-7xl font-black text-slate-900 dark:text-white mb-4 tracking-tighter leading-none">{scoreData.konversi.toFixed(2)}</h3>
+            <span className="inline-flex items-center px-4 py-1.5 rounded-full text-sm sm:text-base font-extrabold bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300">
+              {scoreData.mutu} ({locale === 'id' ? NILAI_MUTU[scoreData.mutu]?.label_id : NILAI_MUTU[scoreData.mutu]?.label_en})
+            </span>
           </div>
-          <div className="w-full md:w-1/2 bg-gray-50/30">
+          <div className="w-full md:w-1/2 bg-slate-50/50 dark:bg-gray-800/20">
             <Table>
               <TableBody>
-                <TableRow className="bg-gray-100/50">
-                  <TableCell className="font-bold w-1/3 text-gray-800">Responden</TableCell>
+                <TableRow className="bg-slate-100/60 dark:bg-gray-800/50">
+                  <TableCell className="font-extrabold w-1/3 text-slate-800 dark:text-slate-200 text-xs">Responden</TableCell>
                   <TableCell></TableCell>
                 </TableRow>
                 <TableRow>
-                  <TableCell className="text-sm font-medium text-gray-600">Jumlah Responden</TableCell>
-                  <TableCell className="text-sm text-gray-800">{totalRespondents} Orang</TableCell>
+                  <TableCell className="text-xs font-bold text-slate-600 dark:text-slate-400">Jumlah Responden</TableCell>
+                  <TableCell className="text-xs font-extrabold text-emerald-600 dark:text-emerald-400">{totalRespondents} Orang</TableCell>
                 </TableRow>
                 {demoData.filter(d => ['jenis_kelamin', 'pendidikan'].includes(d.label.toLowerCase())).map((d, idx) => (
                   <TableRow key={idx}>
-                    <TableCell className="text-sm font-medium text-gray-600 capitalize">
+                    <TableCell className="text-xs font-bold text-slate-600 dark:text-slate-400 capitalize">
                       {d.label.replace(/_/g, ' ')}
                     </TableCell>
-                    <TableCell className="text-sm text-gray-800">
+                    <TableCell className="text-xs font-semibold text-slate-800 dark:text-slate-200">
                       {d.options.map((opt) => (
                         <div key={opt.value} className="mb-1 last:mb-0">
-                          {opt.value} : {opt.count} Orang
+                          {opt.value} : <span className="font-bold text-emerald-600 dark:text-emerald-400">{opt.count} Orang</span>
                         </div>
                       ))}
                     </TableCell>
@@ -204,18 +205,18 @@ export function DetailedBreakdown({ indexType, serviceFilter, summary, byService
           </div>
         </div>
 
-        <div className="border-t border-gray-100 bg-gray-50/50 overflow-x-auto">
+        <div className="border-t border-slate-100 dark:border-gray-800 bg-slate-50/50 dark:bg-gray-800/20 overflow-x-auto">
           <Table>
             <TableBody>
               {demoData.filter(d => ['pekerjaan', 'usia'].includes(d.label.toLowerCase())).map((d, idx) => (
                 <TableRow key={idx}>
-                  <TableCell className="font-bold text-gray-800 bg-gray-100/80 w-[150px] capitalize">
+                  <TableCell className="font-extrabold text-slate-800 dark:text-slate-200 bg-slate-100/80 dark:bg-gray-800/60 w-[150px] capitalize text-xs">
                     {d.label.replace(/_/g, ' ')}
                   </TableCell>
                   {d.options.map(opt => (
                     <TableCell key={opt.value} className="text-center align-top min-w-[120px]">
-                      <div className="text-sm font-semibold text-gray-700 mb-1">{opt.value}</div>
-                      <div className="text-sm text-gray-500">{opt.count} Orang</div>
+                      <div className="text-xs font-bold text-slate-800 dark:text-slate-200 mb-1">{opt.value}</div>
+                      <div className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">{opt.count} Orang</div>
                     </TableCell>
                   ))}
                 </TableRow>

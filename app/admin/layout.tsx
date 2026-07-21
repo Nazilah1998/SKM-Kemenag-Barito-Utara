@@ -14,8 +14,9 @@ import {
   PieChart,
   Settings,
   LogOut,
-  Menu,
   ChevronRight,
+  ChevronDown,
+  QrCode,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { ADMIN_EMAIL } from "@/lib/constants";
@@ -89,14 +90,52 @@ const navItems: NavItem[] = [
     href: "/admin/pengaturan",
     icon: <Settings className="size-4" />,
   },
+  {
+    label: "QR Code & Barcode",
+    href: "/admin/barcode",
+    icon: <QrCode className="size-4" />,
+  },
 ];
+
+function AnimatedHamburgerIcon({ isOpen }: { isOpen: boolean }) {
+  return (
+    <div className="relative size-5 flex flex-col justify-center items-center">
+      <motion.span
+        animate={{
+          rotate: isOpen ? 45 : 0,
+          y: isOpen ? 0 : -6,
+        }}
+        transition={{ duration: 0.25, ease: "easeInOut" }}
+        className="absolute h-0.5 w-4.5 bg-current rounded-full origin-center"
+      />
+      <motion.span
+        animate={{
+          opacity: isOpen ? 0 : 1,
+          scaleX: isOpen ? 0 : 1,
+        }}
+        transition={{ duration: 0.2, ease: "easeInOut" }}
+        className="absolute h-0.5 w-4.5 bg-current rounded-full origin-center"
+      />
+      <motion.span
+        animate={{
+          rotate: isOpen ? -45 : 0,
+          y: isOpen ? 0 : 6,
+        }}
+        transition={{ duration: 0.25, ease: "easeInOut" }}
+        className="absolute h-0.5 w-4.5 bg-current rounded-full origin-center"
+      />
+    </div>
+  );
+}
 
 function SidebarContent({
   pathname,
   setSheetOpen,
+  isCollapsed = false,
 }: {
   pathname: string | null;
   setSheetOpen: (open: boolean) => void;
+  isCollapsed?: boolean;
 }) {
   const isActive = (href: string) => {
     if (href === "/admin") return pathname === "/admin";
@@ -104,59 +143,76 @@ function SidebarContent({
   };
 
   return (
-    <div className="flex h-full flex-col">
-      <div className="flex items-center gap-3 px-6 py-6 border-b border-gray-100 dark:border-gray-800">
-        <div className="relative flex size-10 items-center justify-center rounded-xl bg-white text-lg font-bold shadow-sm overflow-hidden p-1">
-          <Image
-            src="/arus.png"
-            alt="SI-ARUS"
-            fill
-            unoptimized
-            className="object-contain p-1"
-          />
+    <div className="flex h-full flex-col justify-between">
+      <div>
+        {/* Branding Header */}
+        <div className={`flex items-center ${isCollapsed ? "justify-center px-2" : "px-5"} py-5 border-b border-gray-100 dark:border-gray-800 transition-all duration-300`}>
+          <Link href="/admin" className="flex items-center gap-3 overflow-hidden">
+            <div className="relative flex size-10 shrink-0 items-center justify-center rounded-xl bg-white text-lg font-bold shadow-sm border border-gray-100 p-1">
+              <Image
+                src="/arus.png"
+                alt="SI-ARUS"
+                fill
+                unoptimized
+                className="object-contain p-1"
+              />
+            </div>
+            {!isCollapsed && (
+              <div className="flex flex-col whitespace-nowrap">
+                <span className="font-extrabold text-gray-900 dark:text-white text-lg tracking-tight">
+                  SI-ARUS
+                </span>
+                <span className="text-[11px] text-emerald-600 font-semibold">Panel Admin</span>
+              </div>
+            )}
+          </Link>
         </div>
-        <div className="flex flex-col">
-          <span className="font-bold text-gray-900 dark:text-white text-lg tracking-tight">
-            SI-ARUS
-          </span>
-          <span className="text-xs text-gray-500 font-medium">Panel Admin</span>
-        </div>
-      </div>
 
-      <div className="flex-1 overflow-y-auto px-4 py-4">
-        <nav className="flex flex-col gap-2">
-          {navItems.map((item) => {
-            const active = isActive(item.href);
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={() => setSheetOpen(false)}
-                className={`group flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all duration-200 ${
-                  active
-                    ? "bg-emerald-50 text-emerald-700 shadow-sm dark:bg-emerald-900/30 dark:text-emerald-400"
-                    : "text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
-                }`}
-              >
-                <div
-                  className={`transition-transform duration-200 ${active ? "scale-110" : "group-hover:scale-110"}`}
+        {/* Navigation Items */}
+        <div className="flex-1 overflow-y-auto px-3 py-4">
+          <nav className="flex flex-col gap-1.5">
+            {navItems.map((item) => {
+              const active = isActive(item.href);
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={() => setSheetOpen(false)}
+                  title={isCollapsed ? item.label : undefined}
+                  className={`group relative flex items-center ${isCollapsed ? "justify-center px-0 py-3" : "gap-3.5 px-4 py-3"} rounded-xl text-sm font-medium transition-all duration-200 ${
+                    active
+                      ? "bg-emerald-50 text-emerald-700 shadow-sm font-semibold dark:bg-emerald-900/40 dark:text-emerald-400"
+                      : "text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800"
+                  }`}
                 >
-                  {item.icon}
-                </div>
-                <span>{item.label}</span>
-                {active && (
-                  <motion.div
-                    layoutId="activeNav"
-                    className="ml-auto flex items-center"
-                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                  <div
+                    className={`shrink-0 transition-transform duration-200 ${active ? "scale-110 text-emerald-600" : "group-hover:scale-110 text-gray-500 group-hover:text-emerald-600"}`}
                   >
-                    <ChevronRight className="size-4" />
-                  </motion.div>
-                )}
-              </Link>
-            );
-          })}
-        </nav>
+                    {item.icon}
+                  </div>
+                  
+                  {!isCollapsed && (
+                    <span className="truncate whitespace-nowrap text-xs font-semibold sm:text-sm">{item.label}</span>
+                  )}
+
+                  {active && !isCollapsed && (
+                    <motion.div
+                      layoutId="activeNav"
+                      className="ml-auto flex items-center"
+                      transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                    >
+                      <ChevronRight className="size-4 text-emerald-500" />
+                    </motion.div>
+                  )}
+
+                  {active && isCollapsed && (
+                    <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-emerald-500 rounded-r-full" />
+                  )}
+                </Link>
+              );
+            })}
+          </nav>
+        </div>
       </div>
     </div>
   );
@@ -171,6 +227,7 @@ export default function AdminLayout({
   const pathname = usePathname();
   const [checking, setChecking] = useState(true);
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(false);
   const [userInfo, setUserInfo] = useState<PusdatinUser | null>(null);
 
   useEffect(() => {
@@ -224,29 +281,50 @@ export default function AdminLayout({
 
   return (
     <div className="flex min-h-screen bg-gray-50 dark:bg-gray-950">
-      <aside className="hidden w-56 shrink-0 border-r bg-white dark:bg-gray-900 lg:flex lg:flex-col">
-        <SidebarContent pathname={pathname} setSheetOpen={() => {}} />
+      {/* Desktop Sidebar with Animated Collapse/Expand Width */}
+      <aside
+        className={`hidden shrink-0 border-r bg-white dark:bg-gray-900 lg:flex lg:flex-col transition-all duration-300 ease-in-out ${
+          isCollapsed ? "w-20" : "w-64"
+        }`}
+      >
+        <SidebarContent 
+          pathname={pathname} 
+          setSheetOpen={() => {}} 
+          isCollapsed={isCollapsed} 
+        />
       </aside>
 
-      <main className="flex-1 overflow-auto bg-gray-50/50 dark:bg-gray-950/50 flex flex-col">
+      <main className="flex-1 overflow-auto bg-gray-50/50 dark:bg-gray-950/50 flex flex-col w-full">
         {/* Top Header */}
         <header className="h-16 border-b bg-white dark:bg-gray-900 flex items-center justify-between px-4 sm:px-6 shrink-0 shadow-sm z-10 sticky top-0">
-          <div className="flex items-center">
+          <div className="flex items-center gap-3">
+            {/* Mobile Drawer Trigger */}
             <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-              <SheetTrigger className="lg:hidden p-2 -ml-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-200">
-                <Menu className="size-5" />
+              <SheetTrigger className="lg:hidden p-2.5 -ml-2 rounded-xl border border-gray-200/80 bg-white text-gray-700 hover:text-emerald-700 hover:border-emerald-300 hover:bg-emerald-50/50 shadow-xs transition-all duration-200 active:scale-95">
+                <AnimatedHamburgerIcon isOpen={sheetOpen} />
               </SheetTrigger>
-              <SheetContent side="left" className="w-64 p-0">
+              <SheetContent side="left" className="w-72 p-0">
                 <SheetHeader className="sr-only">
                   <SheetTitle>Menu Admin</SheetTitle>
                 </SheetHeader>
                 <SidebarContent
                   pathname={pathname}
                   setSheetOpen={setSheetOpen}
+                  isCollapsed={false}
                 />
               </SheetContent>
             </Sheet>
-            <span className="ml-3 font-semibold text-gray-900 dark:text-white lg:hidden">
+
+            {/* Desktop Single Animated Hamburger Sidebar Toggle Button */}
+            <button
+              onClick={() => setIsCollapsed(!isCollapsed)}
+              className="hidden lg:flex items-center justify-center p-2.5 rounded-xl border border-gray-200/80 bg-white text-gray-700 hover:text-emerald-700 hover:border-emerald-300 hover:bg-emerald-50/50 shadow-xs transition-all duration-200 active:scale-95 cursor-pointer"
+              title={isCollapsed ? "Buka Sidebar" : "Kecilkan Sidebar"}
+            >
+              <AnimatedHamburgerIcon isOpen={isCollapsed} />
+            </button>
+
+            <span className="font-bold text-gray-900 dark:text-white text-base tracking-tight hidden sm:inline-block lg:hidden">
               SI-ARUS Admin
             </span>
           </div>
@@ -254,8 +332,8 @@ export default function AdminLayout({
           {/* User Account Dropdown */}
           <div className="flex items-center">
             <DropdownMenu>
-              <DropdownMenuTrigger className="flex items-center gap-2 rounded-full p-1.5 pr-3 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors outline-none">
-                <div className="relative flex size-8 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 dark:bg-emerald-900/50 dark:text-emerald-400 overflow-hidden">
+              <DropdownMenuTrigger className="group flex items-center gap-2.5 rounded-full border border-gray-200/80 bg-white py-1.5 px-3 shadow-sm hover:border-emerald-300 hover:bg-emerald-50/40 transition-all duration-200 outline-none cursor-pointer">
+                <div className="relative flex size-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-tr from-emerald-600 to-teal-500 text-white shadow-sm ring-2 ring-emerald-100 overflow-hidden">
                   {userInfo?.avatar ? (
                     <Image
                       src={userInfo.avatar}
@@ -268,28 +346,53 @@ export default function AdminLayout({
                     <User className="size-4" />
                   )}
                 </div>
-                <div className="hidden sm:flex flex-col items-start text-left overflow-hidden max-w-[120px]">
-                  <span className="text-sm font-semibold truncate w-full text-gray-900 dark:text-gray-100">
+                <div className="hidden sm:flex flex-col items-start text-left">
+                  <span className="text-xs font-bold text-gray-900 group-hover:text-emerald-800 transition-colors">
                     {userInfo?.name || "Admin"}
                   </span>
+                  <span className="text-[10px] font-medium text-emerald-600 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-100">
+                    Administrator
+                  </span>
                 </div>
+                <ChevronDown className="size-3.5 text-gray-400 group-hover:text-emerald-700 transition-transform duration-200 group-data-[state=open]:rotate-180" />
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56 rounded-xl mt-1">
-                <div className="px-2.5 py-2">
-                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                    Akun Saya
-                  </p>
-                  <p className="text-xs text-gray-500 truncate mt-0.5">
-                    {ADMIN_EMAIL}
-                  </p>
+              <DropdownMenuContent align="end" className="w-64 rounded-2xl border border-gray-200/90 bg-white p-2 shadow-2xl shadow-emerald-950/10 mt-2 space-y-1">
+                {/* User Header Profile Card */}
+                <div className="flex items-center gap-3 rounded-xl bg-gradient-to-br from-emerald-50/80 to-teal-50/50 p-3 border border-emerald-100/80">
+                  <div className="relative flex size-10 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-white font-bold shadow-md ring-2 ring-white overflow-hidden">
+                    {userInfo?.avatar ? (
+                      <Image src={userInfo.avatar} alt="Avatar" fill unoptimized className="object-cover" />
+                    ) : (
+                      <User className="size-5" />
+                    )}
+                  </div>
+                  <div className="flex flex-col min-w-0 flex-1">
+                    <p className="text-xs font-bold text-gray-900 truncate">
+                      {userInfo?.name || "Admin"}
+                    </p>
+                    <p className="text-[11px] text-gray-500 truncate">
+                      {ADMIN_EMAIL}
+                    </p>
+                    <div className="flex items-center gap-1 mt-1">
+                      <span className="inline-block size-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                      <span className="text-[10px] font-semibold text-emerald-700">Aktif & Terverifikasi</span>
+                    </div>
+                  </div>
                 </div>
-                <DropdownMenuSeparator />
+
+                <DropdownMenuSeparator className="my-1 bg-gray-100" />
+
                 <DropdownMenuItem
                   onClick={handleLogout}
-                  className="text-red-600 focus:text-red-600 focus:bg-red-50 dark:focus:bg-red-950/50 cursor-pointer rounded-lg m-1"
+                  className="flex items-center gap-2.5 rounded-xl py-2.5 px-3 text-xs font-semibold text-rose-600 focus:text-rose-700 focus:bg-rose-50 hover:bg-rose-50 cursor-pointer transition-all duration-150"
                 >
-                  <LogOut className="mr-2 size-4" />
-                  <span>Keluar</span>
+                  <div className="flex size-7 items-center justify-center rounded-lg bg-rose-100 text-rose-600">
+                    <LogOut className="size-4" />
+                  </div>
+                  <div className="flex flex-col">
+                    <span>Keluar dari Akun</span>
+                    <span className="text-[10px] text-rose-400 font-normal">Akhiri sesi administrator</span>
+                  </div>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -303,7 +406,7 @@ export default function AdminLayout({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -15 }}
             transition={{ duration: 0.3, ease: "easeOut" }}
-            className="p-4 md:p-6 lg:p-8 w-full"
+            className="p-4 md:p-6 lg:p-8 w-full max-w-full flex-1"
           >
             {children}
           </motion.div>

@@ -54,6 +54,7 @@ CREATE TABLE kemenag_survey.questions (
   question_text_id text NOT NULL,
   question_text_en text NOT NULL,
   input_type kemenag_survey.input_type NOT NULL DEFAULT 'star_rating',
+  rating_labels jsonb DEFAULT '{"1":"Tidak Puas","2":"Kurang Puas","3":"Puas","4":"Sangat Puas"}'::jsonb,
   is_active boolean NOT NULL DEFAULT true,
   sort_order int NOT NULL DEFAULT 0,
   created_at timestamptz NOT NULL DEFAULT now(),
@@ -61,7 +62,7 @@ CREATE TABLE kemenag_survey.questions (
 );
 
 -- 6.5 demographic_fields
-CREATE TYPE kemenag_survey.field_type AS ENUM ('select', 'text', 'number');
+CREATE TYPE kemenag_survey.field_type AS ENUM ('select', 'checkbox', 'toggle', 'text', 'number');
 
 CREATE TABLE kemenag_survey.demographic_fields (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),

@@ -77,7 +77,7 @@ export default function ProfilPage() {
   return (
     <>
       <PublicNavbar />
-      <main className="min-h-screen bg-gray-50/50 pb-20">
+      <main className="min-h-screen bg-gray-50/50 pb-4">
         <PageBanner
           title="Profil SI-ARUS"
           description="Sistem Informasi Analisis Rekapitulasi Ulasan Survei (SI-ARUS) merupakan wadah digital untuk mengukur Indeks Kepuasan Masyarakat pada Kementerian Agama Kabupaten Barito Utara."
@@ -88,7 +88,7 @@ export default function ProfilPage() {
           ]}
         />
 
-        <div className="w-full px-6 sm:px-10 lg:px-16 xl:px-20 py-12 space-y-16">
+        <div className="w-full px-6 sm:px-10 lg:px-16 xl:px-20 pt-10 pb-4 space-y-12">
           {/* Tentang SI-ARUS & Dasar Hukum */}
           <section className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12">
             <div className="lg:col-span-4 flex flex-col justify-center">

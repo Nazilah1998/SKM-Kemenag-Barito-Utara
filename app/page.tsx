@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { BarChart3, ClipboardCheck, Users, ArrowRight, FileText } from 'lucide-react'
+import { Award, ShieldCheck, Users, ArrowRight, FileText, ClipboardList } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -70,12 +70,12 @@ export default function HomePage() {
 
   function getGradeColor(mutu: string) {
     const colors: Record<string, string> = {
-      A: 'text-green-600 bg-green-50 border-green-200',
-      B: 'text-blue-600 bg-blue-50 border-blue-200',
-      C: 'text-yellow-600 bg-yellow-50 border-yellow-200',
-      D: 'text-red-600 bg-red-50 border-red-200',
+      A: 'text-emerald-700 bg-emerald-50 border-emerald-200/80 font-bold',
+      B: 'text-blue-700 bg-blue-50 border-blue-200/80 font-bold',
+      C: 'text-amber-700 bg-amber-50 border-amber-200/80 font-bold',
+      D: 'text-rose-700 bg-rose-50 border-rose-200/80 font-bold',
     }
-    return colors[mutu] || 'text-gray-600 bg-gray-50 border-gray-200'
+    return colors[mutu] || 'text-slate-600 bg-slate-50 border-slate-200'
   }
 
   const getCurrentPeriodText = () => {
@@ -92,135 +92,159 @@ export default function HomePage() {
   return (
     <>
       <PublicNavbar />
-      <main className="flex-1 bg-gray-50/50">
+      <main className="flex-1 bg-slate-50/70 dark:bg-gray-950">
         <PageBanner
           title={t('home.hero_title')}
           description={t('home.hero_desc')}
           eyebrow={t('common.app_full')}
         >
-          <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
+          <div className="flex flex-col items-center justify-center gap-3.5 sm:flex-row">
             <Link href="/survei">
-              <Button size="lg" className="bg-white text-emerald-700 hover:bg-gray-100 shadow-lg">
-                <ClipboardCheck className="mr-2 size-5" />
-                {t('home.start_survey')}
-                <ArrowRight className="ml-2 size-4" />
+              <Button size="lg" className="bg-white text-emerald-900 hover:bg-emerald-50 font-extrabold rounded-2xl px-7 py-6 shadow-xl shadow-black/20 hover:scale-[1.02] transition-all cursor-pointer">
+                <ClipboardList className="mr-2.5 size-5 text-emerald-600" />
+                <span>{t('home.start_survey')}</span>
+                <ArrowRight className="ml-2.5 size-4 text-emerald-600" />
               </Button>
             </Link>
             <Link href="/hasil">
-              <Button size="lg" variant="outline" className="border-white/30 bg-white/10 text-white hover:bg-white/20 backdrop-blur-sm shadow-lg">
-                <FileText className="mr-2 size-5" />
-                {t('home.view_results')}
+              <Button size="lg" variant="outline" className="border-white/30 bg-white/10 hover:bg-white/20 text-white font-bold rounded-2xl px-6 py-6 backdrop-blur-md shadow-lg hover:scale-[1.02] transition-all cursor-pointer">
+                <FileText className="mr-2.5 size-4 text-emerald-300" />
+                <span>{t('home.view_results')}</span>
               </Button>
             </Link>
           </div>
         </PageBanner>
 
-        <section className="relative z-10 mx-auto w-full px-6 sm:px-10 lg:px-16 xl:px-20 -mt-8 pb-16">
-          <div className="grid gap-6 md:grid-cols-3">
+        <section className="relative z-10 mx-auto w-full px-6 sm:px-10 lg:px-16 xl:px-20 -mt-12 pb-6">
+          <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+            
+            {/* IPKP Card */}
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.1 }}
             >
-              <Card className="shadow-xl hover:shadow-2xl transition-all duration-300 border-t-4 border-t-emerald-500 bg-white/90 backdrop-blur-sm">
-                <CardHeader className="pb-2 text-center">
-                  <CardTitle className="flex flex-col items-center justify-center gap-2 text-lg">
-                    <BarChart3 className="size-6 text-emerald-600" />
-                    <span className="leading-tight">{t('home.ipkp_title')}</span>
+              <Card className="rounded-3xl shadow-xl hover:shadow-2xl transition-all duration-300 border border-slate-200/80 dark:border-gray-800 bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl hover:-translate-y-1">
+                <CardHeader className="pb-3 text-center">
+                  <CardTitle className="flex flex-col items-center justify-center gap-2">
+                    <div className="flex size-12 items-center justify-center rounded-2xl bg-emerald-100 dark:bg-emerald-950 text-emerald-600 shadow-inner">
+                      <Award className="size-6" />
+                    </div>
+                    <span className="text-sm font-extrabold tracking-tight text-slate-800 dark:text-slate-200 mt-1">
+                      {t('home.ipkp_title')}
+                    </span>
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="flex flex-col items-center text-center">
+
+                <CardContent className="flex flex-col items-center text-center pb-6">
                 {loading ? (
-                  <div className="h-12 animate-pulse rounded bg-gray-200" />
+                  <div className="h-12 w-24 animate-pulse rounded-2xl bg-slate-200 dark:bg-slate-800" />
                 ) : ipkp ? (
                   <div className="flex flex-col items-center">
-                    <div className="flex items-center justify-center gap-2">
-                      <span className="text-3xl font-bold">{ipkp.nilai_konversi.toFixed(2)}</span>
-                      <Badge className={getGradeColor(ipkp.mutu)}>
+                    <div className="flex items-baseline justify-center gap-2">
+                      <span className="text-4xl font-black text-slate-900 dark:text-white tracking-tight">{ipkp.nilai_konversi.toFixed(2)}</span>
+                      <Badge className={`px-2.5 py-0.5 rounded-full text-xs ${getGradeColor(ipkp.mutu)}`}>
                         {ipkp.mutu}
                       </Badge>
                     </div>
-                    <p className="mt-1 text-sm text-muted-foreground">
+                    <p className="mt-1.5 text-xs font-bold text-slate-500">
                       {locale === 'id' ? NILAI_MUTU[ipkp.mutu]?.label_id : NILAI_MUTU[ipkp.mutu]?.label_en}
                     </p>
                   </div>
                 ) : (
                   <div className="flex flex-col items-center">
-                    <div className="flex items-center justify-center gap-2">
-                      <span className="text-3xl font-bold text-gray-400">0.00</span>
-                      <Badge className="text-gray-500 bg-gray-100 border-gray-200">-</Badge>
+                    <div className="flex items-baseline justify-center gap-2">
+                      <span className="text-4xl font-black text-slate-300 dark:text-slate-700">0.00</span>
+                      <Badge className="text-slate-400 bg-slate-100 border-slate-200">-</Badge>
                     </div>
-                    <p className="mt-1 text-sm text-muted-foreground">Belum ada survei</p>
+                    <p className="mt-1.5 text-xs font-semibold text-slate-400">Belum ada data survei</p>
                   </div>
                 )}
                 </CardContent>
               </Card>
             </motion.div>
 
+            {/* IPAK Card */}
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.2 }}
             >
-              <Card className="shadow-xl hover:shadow-2xl transition-all duration-300 border-t-4 border-t-blue-500 bg-white/90 backdrop-blur-sm">
-                <CardHeader className="pb-2 text-center">
-                  <CardTitle className="flex flex-col items-center justify-center gap-2 text-lg">
-                    <BarChart3 className="size-6 text-blue-600" />
-                    <span className="leading-tight">{t('home.ipak_title')}</span>
+              <Card className="rounded-3xl shadow-xl hover:shadow-2xl transition-all duration-300 border border-slate-200/80 dark:border-gray-800 bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl hover:-translate-y-1">
+                <CardHeader className="pb-3 text-center">
+                  <CardTitle className="flex flex-col items-center justify-center gap-2">
+                    <div className="flex size-12 items-center justify-center rounded-2xl bg-blue-100 dark:bg-blue-950 text-blue-600 shadow-inner">
+                      <ShieldCheck className="size-6" />
+                    </div>
+                    <span className="text-sm font-extrabold tracking-tight text-slate-800 dark:text-slate-200 mt-1">
+                      {t('home.ipak_title')}
+                    </span>
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="flex flex-col items-center text-center">
+
+                <CardContent className="flex flex-col items-center text-center pb-6">
                 {loading ? (
-                  <div className="h-12 animate-pulse rounded bg-gray-200" />
+                  <div className="h-12 w-24 animate-pulse rounded-2xl bg-slate-200 dark:bg-slate-800" />
                 ) : ipak ? (
                   <div className="flex flex-col items-center">
-                    <div className="flex items-center justify-center gap-2">
-                      <span className="text-3xl font-bold">{ipak.nilai_konversi.toFixed(2)}</span>
-                      <Badge className={getGradeColor(ipak.mutu)}>
+                    <div className="flex items-baseline justify-center gap-2">
+                      <span className="text-4xl font-black text-slate-900 dark:text-white tracking-tight">{ipak.nilai_konversi.toFixed(2)}</span>
+                      <Badge className={`px-2.5 py-0.5 rounded-full text-xs ${getGradeColor(ipak.mutu)}`}>
                         {ipak.mutu}
                       </Badge>
                     </div>
-                    <p className="mt-1 text-sm text-muted-foreground">
+                    <p className="mt-1.5 text-xs font-bold text-slate-500">
                       {locale === 'id' ? NILAI_MUTU[ipak.mutu]?.label_id : NILAI_MUTU[ipak.mutu]?.label_en}
                     </p>
                   </div>
                 ) : (
                   <div className="flex flex-col items-center">
-                    <div className="flex items-center justify-center gap-2">
-                      <span className="text-3xl font-bold text-gray-400">0.00</span>
-                      <Badge className="text-gray-500 bg-gray-100 border-gray-200">-</Badge>
+                    <div className="flex items-baseline justify-center gap-2">
+                      <span className="text-4xl font-black text-slate-300 dark:text-slate-700">0.00</span>
+                      <Badge className="text-slate-400 bg-slate-100 border-slate-200">-</Badge>
                     </div>
-                    <p className="mt-1 text-sm text-muted-foreground">Belum ada survei</p>
+                    <p className="mt-1.5 text-xs font-semibold text-slate-400">Belum ada data survei</p>
                   </div>
                 )}
                 </CardContent>
               </Card>
             </motion.div>
 
+            {/* Total Responden Card */}
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.3 }}
             >
-              <Card className="shadow-xl hover:shadow-2xl transition-all duration-300 border-t-4 border-t-purple-500 bg-white/90 backdrop-blur-sm h-full">
-                <CardHeader className="pb-2 text-center">
-                  <CardTitle className="flex flex-col items-center justify-center gap-2 text-lg">
-                    <Users className="size-6 text-purple-600" />
+              <Card className="rounded-3xl shadow-xl hover:shadow-2xl transition-all duration-300 border border-slate-200/80 dark:border-gray-800 bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl hover:-translate-y-1 h-full">
+                <CardHeader className="pb-3 text-center">
+                  <CardTitle className="flex flex-col items-center justify-center gap-2">
+                    <div className="flex size-12 items-center justify-center rounded-2xl bg-purple-100 dark:bg-purple-950 text-purple-600 shadow-inner">
+                      <Users className="size-6" />
+                    </div>
                     <div>
-                      <div className="leading-tight">{t('home.total_responses')}</div>
-                      <div className="text-xs font-normal text-muted-foreground mt-0.5">{getCurrentPeriodText()}</div>
+                      <div className="text-sm font-extrabold tracking-tight text-slate-800 dark:text-slate-200 mt-1">
+                        {t('home.total_responses')}
+                      </div>
+                      <div className="text-[11px] font-bold text-purple-700 bg-purple-50 dark:bg-purple-950/60 px-2.5 py-0.5 rounded-full mt-1 border border-purple-200/80 inline-block">
+                        {getCurrentPeriodText()}
+                      </div>
                     </div>
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="flex flex-col items-center justify-center text-center">
+
+                <CardContent className="flex flex-col items-center justify-center text-center pb-6">
                 {loading ? (
-                  <div className="h-12 animate-pulse rounded bg-gray-200" />
+                  <div className="h-12 w-24 animate-pulse rounded-2xl bg-slate-200 dark:bg-slate-800" />
                 ) : (
-                  <span className="text-3xl font-bold">{totalResponses.toLocaleString()}</span>
+                  <span className="text-4xl font-black text-slate-900 dark:text-white tracking-tight">
+                    {totalResponses.toLocaleString('id-ID')}
+                  </span>
                 )}
                 </CardContent>
               </Card>
             </motion.div>
+
           </div>
         </section>
       </main>

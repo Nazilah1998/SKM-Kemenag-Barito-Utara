@@ -37,6 +37,7 @@ export interface Question {
   question_text_id: string
   question_text_en: string
   input_type: 'star_rating'
+  rating_labels?: Record<string, string> | null
   is_active: boolean
   sort_order: number
   created_at: string
@@ -49,7 +50,7 @@ export interface DemographicField {
   field_key: string
   label_id: string
   label_en: string
-  field_type: 'select' | 'text' | 'number'
+  field_type: 'select' | 'checkbox' | 'toggle' | 'text' | 'number'
   is_required: boolean
   sort_order: number
   is_active: boolean

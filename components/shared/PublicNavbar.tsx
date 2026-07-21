@@ -4,7 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import Image from 'next/image'
-import { Menu, X, Home, ClipboardList, BarChart3, BookOpen, ChevronDown } from 'lucide-react'
+import { Menu, X, Home, ClipboardList, BarChart3, BookOpen, ChevronDown, LogIn } from 'lucide-react'
 import { useI18n } from '@/components/shared/I18nProvider'
 import { SURVEY_ROUTES } from '@/lib/constants'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -81,52 +81,49 @@ export function PublicNavbar() {
     <>
       {/* Navbar */}
       <nav className="sticky top-0 z-50 border-b border-gray-100/80 bg-white/80 backdrop-blur-xl shadow-[0_1px_20px_rgba(0,0,0,0.04)] transition-all duration-300">
-        <div className="mx-auto flex h-16 w-full max-w-7xl px-4 sm:px-6 lg:px-10 items-center justify-between">
-
+        <div className="mx-auto flex h-16 w-full px-4 sm:px-6 lg:px-10 items-center justify-between">
           {/* Logo */}
-          <Link href={SURVEY_ROUTES.HOME} className="flex items-center gap-2.5 group">
-            <div className="flex h-10 items-center justify-center">
-              <Image src="/arus.png" alt="ARUS Logo" width={80} height={40} className="object-contain drop-shadow-sm group-hover:drop-shadow-md transition-all duration-300" />
-            </div>
-            <div className="flex flex-col leading-none max-w-[400px]">
-              <span className="text-[10px] text-emerald-700 font-bold hidden sm:block leading-[1.3] border-l-2 border-emerald-500 pl-2">Sistem Informasi<br/>Analisis Rekapitulasi Ulasan<br/>Survei Kepuasan Masyarakat</span>
-            </div>
-          </Link>
+          <div className="flex-1 flex justify-start">
+            <Link href={SURVEY_ROUTES.HOME} className="flex items-center gap-2.5 group">
+              <div className="flex h-10 items-center justify-center">
+                <Image src="/arus.png" alt="ARUS Logo" width={80} height={40} className="object-contain drop-shadow-sm group-hover:drop-shadow-md transition-all duration-300" />
+              </div>
+              <div className="flex flex-col leading-none max-w-[400px]">
+                <span className="text-[10px] text-emerald-700 font-bold hidden sm:block leading-[1.3] border-l-2 border-emerald-500 pl-2">Sistem Informasi<br/>Analisis Rekapitulasi Ulasan<br/>Survei Kepuasan Masyarakat</span>
+              </div>
+            </Link>
+          </div>
 
-          {/* Desktop Nav */}
-          <div className="hidden items-center gap-1 md:flex">
+          {/* Desktop Nav (Centered) */}
+          <div className="hidden items-center gap-1.5 lg:flex">
             {links.map((link) => {
-              const isActive = pathname === link.href || (link.href === SURVEY_ROUTES.HASIL && pathname.startsWith('/hasil'))
-              
+              const isActive = pathname === link.href
+
               if (link.href === SURVEY_ROUTES.HASIL) {
+                const isHasilActive = pathname.startsWith('/hasil')
+
                 return (
                   <DropdownMenu key={link.href}>
                     <DropdownMenuTrigger
                       className={cn(
-                        'relative flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 focus:outline-none',
-                        isActive
-                          ? 'text-emerald-700 bg-emerald-50'
-                          : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                        'group relative flex items-center gap-1.5 px-3.5 py-2 text-sm font-bold rounded-xl transition-all duration-200 focus:outline-none cursor-pointer',
+                        isHasilActive
+                          ? 'text-emerald-800 bg-emerald-100/80 border border-emerald-200/80 shadow-xs'
+                          : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80'
                       )}
                     >
-                      <link.icon className="size-4" />
-                      {link.label}
-                      {isActive && (
-                        <motion.div
-                          layoutId="activeNavItem"
-                          className="absolute inset-0 bg-emerald-50 rounded-lg -z-10"
-                          transition={{ type: 'spring', stiffness: 380, damping: 30 }}
-                        />
-                      )}
+                      <link.icon className="size-4 text-emerald-600" />
+                      <span>{link.label}</span>
+                      <ChevronDown className="size-3.5 text-slate-400 group-data-[state=open]:rotate-180 transition-transform duration-200" />
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="center" className="w-48 rounded-xl">
+                    <DropdownMenuContent align="center" className="w-52 rounded-2xl p-1.5 shadow-xl border-slate-200">
                       <Link href="/hasil/ipkp">
-                        <DropdownMenuItem className={cn("cursor-pointer rounded-lg py-2", pathname === '/hasil/ipkp' && "bg-emerald-50 text-emerald-700 font-medium")}>
+                        <DropdownMenuItem className={cn("cursor-pointer rounded-xl py-2 text-xs font-semibold", pathname === '/hasil/ipkp' && "bg-emerald-50 text-emerald-700 font-bold")}>
                           Rekapitulasi IPKP
                         </DropdownMenuItem>
                       </Link>
                       <Link href="/hasil/ipak">
-                        <DropdownMenuItem className={cn("cursor-pointer rounded-lg py-2", pathname === '/hasil/ipak' && "bg-emerald-50 text-emerald-700 font-medium")}>
+                        <DropdownMenuItem className={cn("cursor-pointer rounded-xl py-2 text-xs font-semibold", pathname === '/hasil/ipak' && "bg-emerald-50 text-emerald-700 font-bold")}>
                           Rekapitulasi IPAK
                         </DropdownMenuItem>
                       </Link>
@@ -142,63 +139,97 @@ export function PublicNavbar() {
                   <DropdownMenu key={link.href}>
                     <DropdownMenuTrigger
                       className={cn(
-                        'relative flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 focus:outline-none',
+                        'group relative flex items-center gap-1.5 px-3.5 py-2 text-sm font-bold rounded-xl transition-all duration-200 focus:outline-none cursor-pointer',
                         isArsipActive
-                          ? 'text-emerald-700 bg-emerald-50'
-                          : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                          ? 'text-emerald-800 bg-emerald-100/80 border border-emerald-200/80 shadow-xs'
+                          : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80'
                       )}
                     >
-                      <link.icon className="size-4" />
-                      {link.label}
-                      {isArsipActive && (
-                        <motion.div
-                          layoutId="activeNavItem"
-                          className="absolute inset-0 bg-emerald-50 rounded-lg -z-10"
-                          transition={{ type: 'spring', stiffness: 380, damping: 30 }}
-                        />
-                      )}
+                      <link.icon className="size-4 text-emerald-600" />
+                      <span>{link.label}</span>
+                      <ChevronDown className="size-3.5 text-slate-400 group-data-[state=open]:rotate-180 transition-transform duration-200" />
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="center" className="w-48 rounded-xl">
-                      {['IPKP', 'IPAK'].map((type) => (
-                        <DropdownMenuSub key={type}>
-                          <DropdownMenuSubTrigger className="rounded-lg py-2 cursor-pointer">
-                            <span>Arsip {type}</span>
+                    <DropdownMenuContent align="center" className="w-56 rounded-2xl p-1.5 shadow-xl border-slate-200">
+                      {archiveData.map((item) => (
+                        <DropdownMenuSub key={item.year}>
+                          <DropdownMenuSubTrigger className="rounded-xl py-2 cursor-pointer font-bold text-xs">
+                            <FolderArchive className="size-4 mr-2 text-emerald-600" />
+                            <span>Arsip Tahun {item.year}</span>
                           </DropdownMenuSubTrigger>
-                          <DropdownMenuSubContent className="w-40 rounded-xl">
-                            {archiveData.map(({ year, quarters, hasSemester1, hasSemester2, hasTahunan }) => (
-                              <DropdownMenuSub key={`${type}-${year}`}>
-                                <DropdownMenuSubTrigger className="rounded-lg py-2 cursor-pointer">
-                                  <span>Tahun {year}</span>
-                                </DropdownMenuSubTrigger>
-                                <DropdownMenuSubContent className="w-48 rounded-xl">
-                                  {quarters.map(q => (
-                                    <Link key={q} href={`/arsip/${type.toLowerCase()}/${year}/q${q}`}>
-                                      <DropdownMenuItem className="cursor-pointer rounded-lg py-2">
-                                        Triwulan {['I', 'II', 'III', 'IV'][q - 1]}
-                                      </DropdownMenuItem>
-                                    </Link>
-                                  ))}
-                                  
-                                  {(hasSemester1 || hasSemester2 || hasTahunan) && <DropdownMenuSeparator />}
-                                  
-                                  {hasSemester1 && (
-                                    <Link href={`/arsip/${type.toLowerCase()}/${year}/sem1`}>
-                                      <DropdownMenuItem className="cursor-pointer rounded-lg py-2">Semester 1</DropdownMenuItem>
-                                    </Link>
-                                  )}
-                                  {hasSemester2 && (
-                                    <Link href={`/arsip/${type.toLowerCase()}/${year}/sem2`}>
-                                      <DropdownMenuItem className="cursor-pointer rounded-lg py-2">Semester 2</DropdownMenuItem>
-                                    </Link>
-                                  )}
-                                  {hasTahunan && (
-                                    <Link href={`/arsip/${type.toLowerCase()}/${year}/tahunan`}>
-                                      <DropdownMenuItem className="cursor-pointer rounded-lg py-2 font-semibold">Tahunan</DropdownMenuItem>
-                                    </Link>
-                                  )}
-                                </DropdownMenuSubContent>
-                              </DropdownMenuSub>
-                            ))}
+                          <DropdownMenuSubContent className="w-52 rounded-2xl p-1.5 shadow-xl">
+                            <DropdownMenuSub>
+                              <DropdownMenuSubTrigger className="rounded-xl py-1.5 cursor-pointer text-xs font-semibold">
+                                Indeks IPKP
+                              </DropdownMenuSubTrigger>
+                              <DropdownMenuSubContent className="w-48 rounded-xl p-1">
+                                {item.quarters.map((q) => (
+                                  <Link key={q} href={`/arsip/ipkp/${item.year}/q${q}`}>
+                                    <DropdownMenuItem className="cursor-pointer text-xs py-1.5 rounded-md font-medium">
+                                      Triwulan {q} ({item.year})
+                                    </DropdownMenuItem>
+                                  </Link>
+                                ))}
+                                {item.hasSemester1 && (
+                                  <Link href={`/arsip/ipkp/${item.year}/s1`}>
+                                    <DropdownMenuItem className="cursor-pointer text-xs py-1.5 rounded-md font-medium">
+                                      Semester I ({item.year})
+                                    </DropdownMenuItem>
+                                  </Link>
+                                )}
+                                {item.hasSemester2 && (
+                                  <Link href={`/arsip/ipkp/${item.year}/s2`}>
+                                    <DropdownMenuItem className="cursor-pointer text-xs py-1.5 rounded-md font-medium">
+                                      Semester II ({item.year})
+                                    </DropdownMenuItem>
+                                  </Link>
+                                )}
+                                {item.hasTahunan && (
+                                  <Link href={`/arsip/ipkp/${item.year}/tahunan`}>
+                                    <DropdownMenuItem className="cursor-pointer text-xs py-1.5 rounded-md font-bold text-emerald-700">
+                                      Tahunan ({item.year})
+                                    </DropdownMenuItem>
+                                  </Link>
+                                )}
+                              </DropdownMenuSubContent>
+                            </DropdownMenuSub>
+
+                            <DropdownMenuSeparator />
+
+                            <DropdownMenuSub>
+                              <DropdownMenuSubTrigger className="rounded-xl py-1.5 cursor-pointer text-xs font-semibold">
+                                Indeks IPAK
+                              </DropdownMenuSubTrigger>
+                              <DropdownMenuSubContent className="w-48 rounded-xl p-1">
+                                {item.quarters.map((q) => (
+                                  <Link key={q} href={`/arsip/ipak/${item.year}/q${q}`}>
+                                    <DropdownMenuItem className="cursor-pointer text-xs py-1.5 rounded-md font-medium">
+                                      Triwulan {q} ({item.year})
+                                    </DropdownMenuItem>
+                                  </Link>
+                                ))}
+                                {item.hasSemester1 && (
+                                  <Link href={`/arsip/ipak/${item.year}/s1`}>
+                                    <DropdownMenuItem className="cursor-pointer text-xs py-1.5 rounded-md font-medium">
+                                      Semester I ({item.year})
+                                    </DropdownMenuItem>
+                                  </Link>
+                                )}
+                                {item.hasSemester2 && (
+                                  <Link href={`/arsip/ipak/${item.year}/s2`}>
+                                    <DropdownMenuItem className="cursor-pointer text-xs py-1.5 rounded-md font-medium">
+                                      Semester II ({item.year})
+                                    </DropdownMenuItem>
+                                  </Link>
+                                )}
+                                {item.hasTahunan && (
+                                  <Link href={`/arsip/ipak/${item.year}/tahunan`}>
+                                    <DropdownMenuItem className="cursor-pointer text-xs py-1.5 rounded-md font-bold text-emerald-700">
+                                      Tahunan ({item.year})
+                                    </DropdownMenuItem>
+                                  </Link>
+                                )}
+                              </DropdownMenuSubContent>
+                            </DropdownMenuSub>
                           </DropdownMenuSubContent>
                         </DropdownMenuSub>
                       ))}
@@ -210,67 +241,75 @@ export function PublicNavbar() {
               return (
                 <Link key={link.href} href={link.href}>
                   <span className={cn(
-                    'relative flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200',
+                    'relative flex items-center gap-1.5 px-3.5 py-2 text-sm font-bold rounded-xl transition-all duration-200',
                     isActive
-                      ? 'text-emerald-700 bg-emerald-50'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                      ? 'text-emerald-800 bg-emerald-100/80 border border-emerald-200/80 shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80'
                   )}>
-                    <link.icon className="size-4" />
-                    {link.label}
-                    {isActive && (
-                      <motion.div
-                        layoutId="activeNavItem"
-                        className="absolute inset-0 bg-emerald-50 rounded-lg -z-10"
-                        transition={{ type: 'spring', stiffness: 380, damping: 30 }}
-                      />
-                    )}
+                    <link.icon className="size-4 text-emerald-600" />
+                    <span>{link.label}</span>
                   </span>
                 </Link>
               )
             })}
-
-            {/* Language Toggle Dropdown */}
-            <DropdownMenu>
-              <DropdownMenuTrigger
-                className="ml-2 flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-600 hover:text-emerald-700 border border-gray-200 hover:border-emerald-300 rounded-lg bg-white hover:bg-emerald-50 transition-all duration-200 focus:outline-none"
-              >
-                <Image 
-                  src={locale === 'id' ? "https://flagcdn.com/w20/id.png" : "https://flagcdn.com/w20/us.png"} 
-                  alt={locale === 'id' ? "ID" : "EN"}
-                  width={20}
-                  height={15}
-                  className="w-4 rounded-sm shadow-sm"
-                  unoptimized
-                />
-                <span className="uppercase">{locale}</span>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-40 rounded-xl">
-                <DropdownMenuItem
-                  onClick={() => setLocale('id')}
-                  className={cn("gap-2.5 cursor-pointer rounded-lg py-2", locale === 'id' && "bg-emerald-50 text-emerald-700 font-medium")}
-                >
-                  <Image src="https://flagcdn.com/w20/id.png" alt="ID" width={20} height={15} className="w-5 rounded-sm shadow-sm" unoptimized />
-                  <span>Indonesia</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => setLocale('en')}
-                  className={cn("gap-2.5 cursor-pointer rounded-lg py-2", locale === 'en' && "bg-emerald-50 text-emerald-700 font-medium")}
-                >
-                  <Image src="https://flagcdn.com/w20/us.png" alt="EN" width={20} height={15} className="w-5 rounded-sm shadow-sm" unoptimized />
-                  <span>English</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
           </div>
 
-          {/* Mobile Hamburger */}
-          <button
-            className="relative flex md:hidden size-10 items-center justify-center rounded-xl border border-gray-200 bg-white text-gray-600 hover:text-emerald-700 hover:border-emerald-300 hover:bg-emerald-50 transition-all duration-200 active:scale-95"
-            onClick={() => setOpen(true)}
-            aria-label="Buka menu"
-          >
-            <Menu className="size-5" />
-          </button>
+          {/* Right Section (Actions & Mobile Hamburger) */}
+          <div className="flex-1 flex justify-end items-center gap-2">
+            {/* Desktop Actions */}
+            <div className="hidden lg:flex items-center gap-2">
+              {/* Language Toggle Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger
+                  className="flex items-center gap-2 px-3 py-2 text-xs font-bold text-slate-700 hover:text-emerald-700 border border-slate-200 hover:border-emerald-300 rounded-xl bg-white hover:bg-emerald-50/50 shadow-xs transition-all duration-200 focus:outline-none cursor-pointer"
+                >
+                  <Image 
+                    src={locale === 'id' ? "https://flagcdn.com/w20/id.png" : "https://flagcdn.com/w20/us.png"} 
+                    alt={locale === 'id' ? "ID" : "EN"}
+                    width={18}
+                    height={13}
+                    className="w-4 rounded-xs shadow-xs"
+                    unoptimized
+                  />
+                  <span className="uppercase">{locale}</span>
+                  <ChevronDown className="size-3 text-slate-400" />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-40 rounded-2xl p-1.5 shadow-xl border-slate-200">
+                  <DropdownMenuItem
+                    onClick={() => setLocale('id')}
+                    className={cn("gap-2.5 cursor-pointer rounded-xl py-2 text-xs font-bold", locale === 'id' && "bg-emerald-50 text-emerald-700")}
+                  >
+                    <Image src="https://flagcdn.com/w20/id.png" alt="ID" width={18} height={13} className="w-4 rounded-xs shadow-xs" unoptimized />
+                    <span>Indonesia</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => setLocale('en')}
+                    className={cn("gap-2.5 cursor-pointer rounded-lg py-2 text-xs font-bold", locale === 'en' && "bg-emerald-50 text-emerald-700")}
+                  >
+                    <Image src="https://flagcdn.com/w20/us.png" alt="EN" width={18} height={13} className="w-4 rounded-xs shadow-xs" unoptimized />
+                    <span>English</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              {/* Login Link */}
+              <Link href="/admin/login">
+                <span className="flex items-center gap-2 px-4 py-2 text-xs font-extrabold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow-md shadow-emerald-600/20 transition-all duration-200 cursor-pointer">
+                  <LogIn className="size-4" />
+                  <span>{t('nav.login')}</span>
+                </span>
+              </Link>
+            </div>
+
+            {/* Mobile Hamburger */}
+            <button
+              className="relative flex lg:hidden size-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 hover:text-emerald-700 hover:border-emerald-300 hover:bg-emerald-50 transition-all duration-200 active:scale-95 cursor-pointer"
+              onClick={() => setOpen(true)}
+              aria-label="Buka menu"
+            >
+              <Menu className="size-5" />
+            </button>
+          </div>
         </div>
       </nav>
 
@@ -502,34 +541,45 @@ export function PublicNavbar() {
               </nav>
 
               {/* Drawer Footer */}
-              <div className="px-4 py-4 border-t border-gray-100 space-y-2">
-                <p className="px-3 pb-1 text-[11px] uppercase font-semibold text-gray-400 tracking-wider">Bahasa</p>
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    onClick={() => { setLocale('id'); setOpen(false) }}
-                    className={cn(
-                      "flex items-center justify-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 border",
-                      locale === 'id' 
-                        ? 'border-emerald-200 bg-emerald-50 text-emerald-700 shadow-sm' 
-                        : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
-                    )}
-                  >
-                    <Image src="https://flagcdn.com/w20/id.png" alt="ID" width={20} height={15} className="w-5 rounded-sm shadow-sm" unoptimized /> 
-                    Indonesia
-                  </button>
-                  <button
-                    onClick={() => { setLocale('en'); setOpen(false) }}
-                    className={cn(
-                      "flex items-center justify-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 border",
-                      locale === 'en' 
-                        ? 'border-emerald-200 bg-emerald-50 text-emerald-700 shadow-sm' 
-                        : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
-                    )}
-                  >
-                    <Image src="https://flagcdn.com/w20/us.png" alt="EN" width={20} height={15} className="w-5 rounded-sm shadow-sm" unoptimized /> 
-                    English
-                  </button>
+              <div className="px-4 py-4 border-t border-gray-100 space-y-4">
+                <div className="space-y-2">
+                  <p className="px-3 pb-1 text-[11px] uppercase font-semibold text-gray-400 tracking-wider">Bahasa</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      onClick={() => { setLocale('id'); setOpen(false) }}
+                      className={cn(
+                        "flex items-center justify-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 border",
+                        locale === 'id' 
+                          ? 'border-emerald-200 bg-emerald-50 text-emerald-700 shadow-sm' 
+                          : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
+                      )}
+                    >
+                      <Image src="https://flagcdn.com/w20/id.png" alt="ID" width={20} height={15} className="w-5 rounded-sm shadow-sm" unoptimized /> 
+                      Indonesia
+                    </button>
+                    <button
+                      onClick={() => { setLocale('en'); setOpen(false) }}
+                      className={cn(
+                        "flex items-center justify-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 border",
+                        locale === 'en' 
+                          ? 'border-emerald-200 bg-emerald-50 text-emerald-700 shadow-sm' 
+                          : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
+                      )}
+                    >
+                      <Image src="https://flagcdn.com/w20/us.png" alt="EN" width={20} height={15} className="w-5 rounded-sm shadow-sm" unoptimized /> 
+                      English
+                    </button>
+                  </div>
                 </div>
+
+                <Link
+                  href="/admin/login"
+                  onClick={() => setOpen(false)}
+                  className="flex w-full items-center justify-center gap-2.5 px-4 py-2.5 rounded-xl text-sm font-medium text-gray-700 bg-gray-50 border border-gray-200 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-200 transition-all duration-200"
+                >
+                  <LogIn className="size-4" />
+                  {t('nav.login')}
+                </Link>
               </div>
             </motion.aside>
           </>
