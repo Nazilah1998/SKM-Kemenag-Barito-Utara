@@ -17,6 +17,7 @@ import {
   ChevronRight,
   ChevronDown,
   QrCode,
+  HelpCircle,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { ADMIN_EMAIL } from "@/lib/constants";
@@ -61,9 +62,14 @@ const navItems: NavItem[] = [
     icon: <FileText className="size-4" />,
   },
   {
-    label: "Unsur & Pertanyaan",
+    label: "Unsur Penilaian",
     href: "/admin/unsur",
     icon: <BarChart3 className="size-4" />,
+  },
+  {
+    label: "Pertanyaan Evaluasi",
+    href: "/admin/pertanyaan",
+    icon: <HelpCircle className="size-4" />,
   },
   {
     label: "Field Demografi",

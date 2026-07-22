@@ -1,7 +1,7 @@
 {
   "common": {
-    "app_name": "SIKAP",
-    "app_full": "Public Satisfaction and Aspiration Information System",
+    "app_name": "SI-ARUS",
+    "app_full": "Survey Review Recapitulation Analysis Information System",
     "subtitle": "Ministry of Religious Affairs of Barito Utara Regency",
     "loading": "Loading...",
     "submit": "Submit",
@@ -28,6 +28,14 @@
     "home": "Home",
     "survey": "Take Survey",
     "results": "Survey Results",
+    "archives": "Survey Archives",
+    "about": "About SI-ARUS",
+    "recap_ipkp": "IPKP Recapitulation",
+    "recap_ipak": "IPAK Recapitulation",
+    "archive_year": "Archive Year",
+    "quarter": "Quarter",
+    "semester": "Semester",
+    "annual": "Annual",
     "admin": "Admin",
     "login": "Login",
     "logout": "Logout"
@@ -81,14 +89,18 @@
     "score": "Score",
     "no_data": "No survey data yet"
   },
+  "footer": {
+    "rights": "All Rights Reserved.",
+    "motto": "Harmonious, Trustworthy, Professional, Accountable, Creative, Fair and Transparent"
+  },
   "admin": {
-    "title": "SIKAP Admin Panel",
+    "title": "SI-ARUS Admin Panel",
     "login_title": "Login to Admin Panel",
     "login_email": "Email",
     "login_password": "Password",
     "login_button": "Login",
     "login_error": "Invalid email or password",
-    "login_restricted": "Access restricted to Kemenag Barito Utara admin",
+    "login_restricted": "Access restricted to authorized Kemenag Barito Utara officers",
     "dashboard": "Dashboard",
     "services": "Services",
     "unsur": "Assessment Elements",

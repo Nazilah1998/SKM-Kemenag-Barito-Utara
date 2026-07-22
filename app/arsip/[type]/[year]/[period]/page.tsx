@@ -4,9 +4,9 @@ import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  LineChart, Line, Legend,
+  LineChart, Line, Legend, PieChart, Pie, Cell,
 } from 'recharts'
-import { FileSpreadsheet, FileText, Filter } from 'lucide-react'
+import { FileSpreadsheet, FileText, Filter, Users, GraduationCap, UserCheck, Briefcase } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -28,21 +28,22 @@ export default function ArsipPage() {
   
   const indexType = type.toUpperCase() === 'IPAK' ? 'IPAK' : 'IPKP'
   
+  const { t, locale } = useI18n()
+  const isEn = locale === 'en'
+
   let periodName = ''
   switch (period) {
-    case 'q1': periodName = 'Triwulan I'; break;
-    case 'q2': periodName = 'Triwulan II'; break;
-    case 'q3': periodName = 'Triwulan III'; break;
-    case 'q4': periodName = 'Triwulan IV'; break;
-    case 'sem1': periodName = 'Semester 1'; break;
-    case 'sem2': periodName = 'Semester 2'; break;
-    case 'tahunan': periodName = 'Tahunan'; break;
+    case 'q1': periodName = isEn ? 'Quarter 1' : 'Triwulan I'; break;
+    case 'q2': periodName = isEn ? 'Quarter 2' : 'Triwulan II'; break;
+    case 'q3': periodName = isEn ? 'Quarter 3' : 'Triwulan III'; break;
+    case 'q4': periodName = isEn ? 'Quarter 4' : 'Triwulan IV'; break;
+    case 'sem1': periodName = isEn ? 'Semester 1' : 'Semester 1'; break;
+    case 'sem2': periodName = isEn ? 'Semester 2' : 'Semester 2'; break;
+    case 'tahunan': periodName = isEn ? 'Annual' : 'Tahunan'; break;
   }
   
   const pageTitle = `${indexType === 'IPAK' ? 'Indeks Persepsi Anti Korupsi (IPAK)' : 'Indeks Persepsi Kualitas Pelayanan (IPKP)'}`
   const tableTitle = `${indexType === 'IPAK' ? 'Indeks Persepsi Anti Korupsi (IPAK)' : 'Indeks Persepsi Kualitas Pelayanan (IPKP)'}`
-
-  const { t } = useI18n()
   const [summary, setSummary] = useState<IndexSummary[]>([])
   const [byService, setByService] = useState<IndexByService[]>([])
   const [trend, setTrend] = useState<IndexTrend[]>([])
@@ -134,6 +135,31 @@ export default function ArsipPage() {
     })
   }
 
+  const parseDemoFieldData = (fieldKey: string) => {
+    let filtered = demoSummary.filter((d) => d.field_key.toLowerCase() === fieldKey.toLowerCase())
+    if (serviceFilter !== 'all') {
+      filtered = filtered.filter((d) => d.service_name === serviceFilter)
+    }
+
+    const map = new Map<string, number>()
+    for (const item of filtered) {
+      const val = item.demographic_value || 'Lainnya'
+      map.set(val, (map.get(val) || 0) + Number(item.count || 0))
+    }
+
+    if (map.size === 0) {
+      if (fieldKey === 'jenis_kelamin') {
+        return [
+          { name: 'Laki-laki', value: totalResponses > 0 ? totalResponses : 0 },
+          { name: 'Perempuan', value: 0 },
+        ]
+      }
+      return []
+    }
+
+    return Array.from(map.entries()).map(([name, value]) => ({ name, value }))
+  }
+
   const getMutuDescription = (mutu: string) => {
     if (!mutu || mutu === '-') return 'Belum Terisi Survey'
     switch (mutu) {
@@ -170,12 +196,14 @@ export default function ArsipPage() {
         <div className="mx-auto w-full px-6 sm:px-10 lg:px-16 xl:px-20 pt-8 pb-16">
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-8">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Arsip {pageTitle}</h1>
+              <h1 className="text-2xl font-bold text-gray-900 tracking-tight">
+                {isEn ? `Archive: ${pageTitle}` : `Arsip ${pageTitle}`}
+              </h1>
               <div className="flex items-center gap-2 mt-2">
                 <span className="inline-flex items-center rounded-md bg-emerald-50 px-2.5 py-0.5 text-sm font-medium text-emerald-700 ring-1 ring-inset ring-emerald-600/20">
                   {periodName} {yearStr}
                 </span>
-                <p className="text-sm text-gray-500">{t('home.total_responses')}: <span className="font-semibold text-emerald-600">{totalResponses.toLocaleString()}</span></p>
+                <p className="text-sm text-gray-500">{t('home.total_responses')}: <span className="font-semibold text-emerald-600">{totalResponses.toLocaleString()} {isEn ? 'Respondents' : 'Responden'}</span></p>
               </div>
             </div>
             
@@ -288,23 +316,150 @@ export default function ArsipPage() {
             />
           </div>
 
-          <div className="mb-8 grid gap-6 lg:grid-cols-2">
-            <Card className="shadow-lg border-0 bg-white">
-              <CardHeader className="border-b bg-gray-50/50">
-                <CardTitle>{t('results.breakdown')}</CardTitle>
+          {/* TOP: 4 Demographic Charts (Jenis Kelamin, Pendidikan, Usia, Pekerjaan) */}
+          <div className="mb-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {/* 1. Jenis Kelamin */}
+            <Card className="border border-slate-200/80 dark:border-gray-800 shadow-xl shadow-slate-200/40 dark:shadow-black/20 bg-white dark:bg-gray-900 rounded-3xl overflow-hidden flex flex-col">
+              <CardHeader className="border-b border-slate-100 dark:border-gray-800 bg-slate-50/50 dark:bg-gray-800/40 p-4">
+                <CardTitle className="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-white flex items-center justify-center gap-2">
+                  <Users className="size-4 text-cyan-500" />
+                  <span>Jenis Kelamin <span className="text-slate-400 font-normal">Responden</span></span>
+                </CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-4 flex-1 flex flex-col items-center justify-center">
                 {loading ? (
-                  <div className="h-64 animate-pulse rounded bg-gray-200" />
+                  <div className="h-48 animate-pulse rounded-2xl bg-slate-100 dark:bg-gray-800 w-full" />
+                ) : (
+                  <ResponsiveContainer width="100%" height={220}>
+                    <PieChart>
+                      <Pie
+                        data={parseDemoFieldData('jenis_kelamin')}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={45}
+                        outerRadius={75}
+                        paddingAngle={4}
+                        dataKey="value"
+                      >
+                        {parseDemoFieldData('jenis_kelamin').map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={['#06b6d4', '#ec4899', '#f59e0b', '#10b981'][index % 4]} />
+                        ))}
+                      </Pie>
+                      <Tooltip contentStyle={{ borderRadius: '14px', fontWeight: 600, fontSize: '11px' }} />
+                      <Legend verticalAlign="bottom" height={32} wrapperStyle={{ fontSize: '11px', fontWeight: 600 }} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* 2. Pendidikan */}
+            <Card className="border border-slate-200/80 dark:border-gray-800 shadow-xl shadow-slate-200/40 dark:shadow-black/20 bg-white dark:bg-gray-900 rounded-3xl overflow-hidden flex flex-col">
+              <CardHeader className="border-b border-slate-100 dark:border-gray-800 bg-slate-50/50 dark:bg-gray-800/40 p-4">
+                <CardTitle className="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-white flex items-center justify-center gap-2">
+                  <GraduationCap className="size-4 text-amber-500" />
+                  <span>Pendidikan <span className="text-slate-400 font-normal">Responden</span></span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-4 flex-1 flex flex-col items-center justify-center">
+                {loading ? (
+                  <div className="h-48 animate-pulse rounded-2xl bg-slate-100 dark:bg-gray-800 w-full" />
+                ) : (
+                  <ResponsiveContainer width="100%" height={220}>
+                    <BarChart data={parseDemoFieldData('pendidikan')}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
+                      <XAxis dataKey="name" tick={{ fontSize: 9, fontWeight: 700 }} interval={0} angle={-35} textAnchor="end" height={55} />
+                      <YAxis tick={{ fontSize: 10, fontWeight: 600 }} allowDecimals={false} />
+                      <Tooltip contentStyle={{ borderRadius: '14px', fontWeight: 600, fontSize: '11px' }} />
+                      <Bar dataKey="value" name="Jumlah" radius={[6, 6, 0, 0]}>
+                        {parseDemoFieldData('pendidikan').map((_, index) => (
+                          <Cell key={`cell-${index}`} fill={['#f59e0b', '#3b82f6', '#10b981', '#ec4899', '#8b5cf6', '#06b6d4', '#ef4444', '#64748b'][index % 8]} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* 3. Usia */}
+            <Card className="border border-slate-200/80 dark:border-gray-800 shadow-xl shadow-slate-200/40 dark:shadow-black/20 bg-white dark:bg-gray-900 rounded-3xl overflow-hidden flex flex-col">
+              <CardHeader className="border-b border-slate-100 dark:border-gray-800 bg-slate-50/50 dark:bg-gray-800/40 p-4">
+                <CardTitle className="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-white flex items-center justify-center gap-2">
+                  <UserCheck className="size-4 text-rose-500" />
+                  <span>Usia <span className="text-slate-400 font-normal">Responden</span></span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-4 flex-1 flex flex-col items-center justify-center">
+                {loading ? (
+                  <div className="h-48 animate-pulse rounded-2xl bg-slate-100 dark:bg-gray-800 w-full" />
+                ) : (
+                  <ResponsiveContainer width="100%" height={220}>
+                    <BarChart data={parseDemoFieldData('usia')}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
+                      <XAxis dataKey="name" tick={{ fontSize: 9, fontWeight: 700 }} interval={0} angle={-35} textAnchor="end" height={55} />
+                      <YAxis tick={{ fontSize: 10, fontWeight: 600 }} allowDecimals={false} />
+                      <Tooltip contentStyle={{ borderRadius: '14px', fontWeight: 600, fontSize: '11px' }} />
+                      <Bar dataKey="value" name="Jumlah" radius={[6, 6, 0, 0]}>
+                        {parseDemoFieldData('usia').map((_, index) => (
+                          <Cell key={`cell-${index}`} fill={['#f43f5e', '#ec4899', '#f59e0b', '#eab308', '#84cc16'][index % 5]} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* 4. Pekerjaan */}
+            <Card className="border border-slate-200/80 dark:border-gray-800 shadow-xl shadow-slate-200/40 dark:shadow-black/20 bg-white dark:bg-gray-900 rounded-3xl overflow-hidden flex flex-col">
+              <CardHeader className="border-b border-slate-100 dark:border-gray-800 bg-slate-50/50 dark:bg-gray-800/40 p-4">
+                <CardTitle className="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-white flex items-center justify-center gap-2">
+                  <Briefcase className="size-4 text-teal-500" />
+                  <span>Pekerjaan <span className="text-slate-400 font-normal">Responden</span></span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-4 flex-1 flex flex-col items-center justify-center">
+                {loading ? (
+                  <div className="h-48 animate-pulse rounded-2xl bg-slate-100 dark:bg-gray-800 w-full" />
+                ) : (
+                  <ResponsiveContainer width="100%" height={220}>
+                    <BarChart data={parseDemoFieldData('pekerjaan')}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
+                      <XAxis dataKey="name" tick={{ fontSize: 9, fontWeight: 700 }} interval={0} angle={-35} textAnchor="end" height={55} />
+                      <YAxis tick={{ fontSize: 10, fontWeight: 600 }} allowDecimals={false} />
+                      <Tooltip contentStyle={{ borderRadius: '14px', fontWeight: 600, fontSize: '11px' }} />
+                      <Bar dataKey="value" name="Jumlah" radius={[6, 6, 0, 0]}>
+                        {parseDemoFieldData('pekerjaan').map((_, index) => (
+                          <Cell key={`cell-${index}`} fill={['#10b981', '#14b8a6', '#06b6d4', '#3b82f6', '#6366f1', '#8b5cf6'][index % 6]} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* BOTTOM: 1 Baris dengan 2 Chart (Rincian Nilai Konversi Per Unsur & Tren Nilai) */}
+          <div className="mb-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card className="border border-slate-200/80 dark:border-gray-800 shadow-xl shadow-slate-200/40 dark:shadow-black/20 bg-white dark:bg-gray-900 rounded-3xl overflow-hidden">
+              <CardHeader className="border-b border-slate-100 dark:border-gray-800 bg-slate-50/50 dark:bg-gray-800/40 p-5">
+                <CardTitle className="text-sm font-extrabold text-slate-900 dark:text-white">{t('results.breakdown')}</CardTitle>
+                <p className="text-xs text-slate-400 font-medium mt-0.5">Rincian perbandingan nilai konversi per layanan</p>
+              </CardHeader>
+              <CardContent className="p-5">
+                {loading ? (
+                  <div className="h-64 animate-pulse rounded-2xl bg-slate-100 dark:bg-gray-800" />
                 ) : (
                   <ResponsiveContainer width="100%" height={300}>
                     <BarChart data={parseBarData()}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-                      <YAxis domain={[0, 4]} />
-                      <Tooltip />
-                      <Bar dataKey="IPKP" fill="#059669" radius={[4, 4, 0, 0]} />
-                      <Bar dataKey="IPAK" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
+                      <XAxis dataKey="name" tick={{ fontSize: 9, fontWeight: 700 }} interval={0} angle={-25} textAnchor="end" height={60} />
+                      <YAxis domain={[0, 100]} tick={{ fontSize: 11, fontWeight: 600 }} />
+                      <Tooltip contentStyle={{ borderRadius: '16px', fontWeight: 600 }} />
+                      <Bar dataKey="IPKP" fill="#10b981" radius={[8, 8, 0, 0]} />
+                      <Bar dataKey="IPAK" fill="#3b82f6" radius={[8, 8, 0, 0]} />
                       <Legend />
                     </BarChart>
                   </ResponsiveContainer>
@@ -312,22 +467,22 @@ export default function ArsipPage() {
               </CardContent>
             </Card>
 
-            <Card className="shadow-lg border-0 bg-white">
-              <CardHeader className="border-b bg-gray-50/50">
-                <CardTitle>{t('results.trend')}</CardTitle>
-                <p className="text-xs text-muted-foreground font-normal mt-1">Tren {periodName} {yearStr}</p>
+            <Card className="border border-slate-200/80 dark:border-gray-800 shadow-xl shadow-slate-200/40 dark:shadow-black/20 bg-white dark:bg-gray-900 rounded-3xl overflow-hidden">
+              <CardHeader className="border-b border-slate-100 dark:border-gray-800 bg-slate-50/50 dark:bg-gray-800/40 p-5">
+                <CardTitle className="text-sm font-extrabold text-slate-900 dark:text-white">{t('results.trend')}</CardTitle>
+                <p className="text-xs text-slate-400 font-medium mt-0.5">Tren {periodName} {yearStr}</p>
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-5">
                 {loading ? (
-                  <div className="h-64 animate-pulse rounded bg-gray-200" />
+                  <div className="h-64 animate-pulse rounded-2xl bg-slate-100 dark:bg-gray-800" />
                 ) : (
                   <ResponsiveContainer width="100%" height={300}>
                     <LineChart data={trend}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="bulan" tick={{ fontSize: 12 }} />
-                      <YAxis domain={[0, 4]} />
-                      <Tooltip />
-                      <Line type="monotone" dataKey="nilai_konversi" stroke="#059669" strokeWidth={2} dot={{ fill: '#059669' }} />
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
+                      <XAxis dataKey="bulan" tick={{ fontSize: 11, fontWeight: 700 }} />
+                      <YAxis domain={[0, 100]} tick={{ fontSize: 11, fontWeight: 600 }} />
+                      <Tooltip contentStyle={{ borderRadius: '16px', fontWeight: 600 }} />
+                      <Line type="monotone" dataKey="nilai_konversi" stroke="#0d9488" strokeWidth={3} dot={{ fill: '#0d9488', r: 6 }} />
                       <Legend />
                     </LineChart>
                   </ResponsiveContainer>

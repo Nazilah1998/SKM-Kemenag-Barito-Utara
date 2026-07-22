@@ -150,10 +150,10 @@ export default function AdminUnsurPage() {
           </div>
           <div>
             <h1 className="text-2xl font-black tracking-tight text-slate-900 dark:text-white">
-              Unsur & Pertanyaan Evaluasi
+              Unsur Penilaian Evaluasi
             </h1>
             <p className="text-slate-500 dark:text-slate-400 text-xs sm:text-sm font-medium mt-0.5">
-              Kelola unsur penilaian dan butir kuesioner indikator IPKP & IPAK.
+              Kelola daftar unsur penilaian kuesioner indikator IPKP & IPAK.
             </p>
           </div>
         </div>

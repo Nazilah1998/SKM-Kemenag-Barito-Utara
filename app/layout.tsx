@@ -33,11 +33,17 @@ export const metadata: Metadata = {
   alternates: {
     canonical: "/",
   },
-  icons: [
-    { rel: "icon", url: "/kemenag.svg", type: "image/svg+xml" },
-    { rel: "shortcut icon", url: "/kemenag.svg", type: "image/svg+xml" },
-    { rel: "apple-touch-icon", url: "/kemenag.svg", type: "image/svg+xml" },
-  ],
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/icon.png", type: "image/png", sizes: "512x512" },
+      { url: "/kemenag.svg", type: "image/svg+xml" },
+    ],
+    shortcut: ["/favicon.ico"],
+    apple: [
+      { url: "/apple-icon.png", sizes: "180x180", type: "image/png" },
+    ],
+  },
   openGraph: {
     title: "SI-ARUS - Survei Kepuasan Masyarakat Kemenag Barito Utara",
     description: "Sistem Informasi Analisis Rekapitulasi Ulasan Survei Kepuasan Masyarakat Kantor Kementerian Agama Kabupaten Barito Utara.",

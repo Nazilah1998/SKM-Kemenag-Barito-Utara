@@ -6,7 +6,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   LineChart, Line, Legend, PieChart, Pie, Cell,
 } from 'recharts'
-import { FileSpreadsheet, FileText, Filter } from 'lucide-react'
+import { FileSpreadsheet, FileText, Filter, Users, GraduationCap, UserCheck, Briefcase } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -27,7 +27,7 @@ export default function HasilPage() {
   const pageTitle = indexType === 'IPAK' ? 'Indeks Persepsi Anti Korupsi (IPAK)' : 'Indeks Persepsi Kualitas Pelayanan (IPKP)'
   const tableTitle = indexType === 'IPAK' ? 'Indeks Persepsi Anti Korupsi (IPAK)' : 'Indeks Persepsi Kualitas Pelayanan (IPKP)'
 
-  const { t } = useI18n()
+  const { t, locale } = useI18n()
   const [summary, setSummary] = useState<IndexSummary[]>([])
   const [byService, setByService] = useState<IndexByService[]>([])
   const [trend, setTrend] = useState<IndexTrend[]>([])
@@ -144,57 +144,57 @@ export default function HasilPage() {
     })
   }
 
-  const parsePieData = () => {
-    let filtered = demoSummary
+  const parseDemoFieldData = (fieldKey: string) => {
+    let filtered = demoSummary.filter((d) => d.field_key.toLowerCase() === fieldKey.toLowerCase())
     if (serviceFilter !== 'all') {
       filtered = filtered.filter((d) => d.service_name === serviceFilter)
     }
 
-    const genderData = filtered.filter((d) => d.field_key.toLowerCase() === 'jenis_kelamin')
     const map = new Map<string, number>()
-    for (const item of genderData) {
+    for (const item of filtered) {
       const val = item.demographic_value || 'Lainnya'
       map.set(val, (map.get(val) || 0) + Number(item.count || 0))
     }
 
     if (map.size === 0) {
-      return [
-        { name: 'Laki-laki', value: activeTotalResponses > 0 ? activeTotalResponses : 1 },
-        { name: 'Perempuan', value: 0 },
-      ]
+      if (fieldKey === 'jenis_kelamin') {
+        return [
+          { name: 'Laki-laki', value: activeTotalResponses > 0 ? activeTotalResponses : 0 },
+          { name: 'Perempuan', value: 0 },
+        ]
+      }
+      return []
     }
 
     return Array.from(map.entries()).map(([name, value]) => ({ name, value }))
   }
 
-  const PIE_COLORS = ['#10b981', '#06b6d4', '#f59e0b', '#f43f5e', '#8b5cf6', '#3b82f6']
-
   const getMutuDescription = (mutu: string) => {
-    if (!mutu || mutu === '-') return 'Belum Terisi'
+    if (!mutu || mutu === '-') return locale === 'en' ? 'No Data' : 'Belum Terisi'
     switch (mutu) {
-      case 'A': return 'Sangat Baik'
-      case 'B': return 'Baik'
-      case 'C': return 'Kurang Baik'
-      case 'D': return 'Tidak Baik'
-      default: return 'Belum Terisi'
+      case 'A': return locale === 'en' ? 'Very Good' : 'Sangat Baik'
+      case 'B': return locale === 'en' ? 'Good' : 'Baik'
+      case 'C': return locale === 'en' ? 'Fair' : 'Kurang Baik'
+      case 'D': return locale === 'en' ? 'Poor' : 'Tidak Baik'
+      default: return locale === 'en' ? 'No Data' : 'Belum Terisi'
     }
   }
 
   async function handleExportExcel() {
     try {
       await exportToExcel(summary, byService, activeTotalResponses)
-      toast.success('Berhasil mengekspor ke Excel')
+      toast.success(locale === 'en' ? 'Successfully exported to Excel' : 'Berhasil mengekspor ke Excel')
     } catch {
-      toast.error('Gagal mengekspor Excel')
+      toast.error(locale === 'en' ? 'Failed to export Excel' : 'Gagal mengekspor Excel')
     }
   }
 
   async function handleExportPdf() {
     try {
       await exportToPdf(summary, byService, activeTotalResponses)
-      toast.success('Berhasil mengekspor ke PDF')
+      toast.success(locale === 'en' ? 'Successfully exported to PDF' : 'Berhasil mengekspor ke PDF')
     } catch {
-      toast.error('Gagal mengekspor PDF')
+      toast.error(locale === 'en' ? 'Failed to export PDF' : 'Gagal mengekspor PDF')
     }
   }
 
@@ -206,9 +206,11 @@ export default function HasilPage() {
           {/* Header Bar */}
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-8 bg-white dark:bg-gray-900 p-6 rounded-3xl border border-slate-200/80 dark:border-gray-800 shadow-xl shadow-slate-200/40 dark:shadow-black/20">
             <div>
-              <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">Hasil Survei {pageTitle}</h1>
+              <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
+                {locale === 'en' ? `Survey Results: ${pageTitle}` : `Hasil Survei ${pageTitle}`}
+              </h1>
               <p className="text-xs sm:text-sm text-slate-500 font-medium mt-1">
-                {t('home.total_responses')}: <span className="font-extrabold text-emerald-600 dark:text-emerald-400">{activeTotalResponses.toLocaleString()} Responden</span>
+                {t('home.total_responses')}: <span className="font-extrabold text-emerald-600 dark:text-emerald-400">{activeTotalResponses.toLocaleString()} {locale === 'en' ? 'Respondents' : 'Responden'}</span>
               </p>
             </div>
             
@@ -340,9 +342,135 @@ export default function HasilPage() {
             />
           </div>
 
-          <div className="mb-8 grid gap-6 grid-cols-1 lg:grid-cols-3">
+          {/* TOP: 4 Demographic Charts (Jenis Kelamin, Pendidikan, Usia, Pekerjaan) */}
+          <div className="mb-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {/* 1. Jenis Kelamin */}
+            <Card className="border border-slate-200/80 dark:border-gray-800 shadow-xl shadow-slate-200/40 dark:shadow-black/20 bg-white dark:bg-gray-900 rounded-3xl overflow-hidden flex flex-col">
+              <CardHeader className="border-b border-slate-100 dark:border-gray-800 bg-slate-50/50 dark:bg-gray-800/40 p-4">
+                <CardTitle className="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-white flex items-center justify-center gap-2">
+                  <Users className="size-4 text-cyan-500" />
+                  <span>Jenis Kelamin <span className="text-slate-400 font-normal">Responden</span></span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-4 flex-1 flex flex-col items-center justify-center">
+                {loading ? (
+                  <div className="h-48 animate-pulse rounded-2xl bg-slate-100 dark:bg-gray-800 w-full" />
+                ) : (
+                  <ResponsiveContainer width="100%" height={220}>
+                    <PieChart>
+                      <Pie
+                        data={parseDemoFieldData('jenis_kelamin')}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={45}
+                        outerRadius={75}
+                        paddingAngle={4}
+                        dataKey="value"
+                      >
+                        {parseDemoFieldData('jenis_kelamin').map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={['#06b6d4', '#ec4899', '#f59e0b', '#10b981'][index % 4]} />
+                        ))}
+                      </Pie>
+                      <Tooltip contentStyle={{ borderRadius: '14px', fontWeight: 600, fontSize: '11px' }} />
+                      <Legend verticalAlign="bottom" height={32} wrapperStyle={{ fontSize: '11px', fontWeight: 600 }} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* 2. Pendidikan */}
+            <Card className="border border-slate-200/80 dark:border-gray-800 shadow-xl shadow-slate-200/40 dark:shadow-black/20 bg-white dark:bg-gray-900 rounded-3xl overflow-hidden flex flex-col">
+              <CardHeader className="border-b border-slate-100 dark:border-gray-800 bg-slate-50/50 dark:bg-gray-800/40 p-4">
+                <CardTitle className="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-white flex items-center justify-center gap-2">
+                  <GraduationCap className="size-4 text-amber-500" />
+                  <span>Pendidikan <span className="text-slate-400 font-normal">Responden</span></span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-4 flex-1 flex flex-col items-center justify-center">
+                {loading ? (
+                  <div className="h-48 animate-pulse rounded-2xl bg-slate-100 dark:bg-gray-800 w-full" />
+                ) : (
+                  <ResponsiveContainer width="100%" height={220}>
+                    <BarChart data={parseDemoFieldData('pendidikan')}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
+                      <XAxis dataKey="name" tick={{ fontSize: 9, fontWeight: 700 }} interval={0} angle={-35} textAnchor="end" height={55} />
+                      <YAxis tick={{ fontSize: 10, fontWeight: 600 }} allowDecimals={false} />
+                      <Tooltip contentStyle={{ borderRadius: '14px', fontWeight: 600, fontSize: '11px' }} />
+                      <Bar dataKey="value" name="Jumlah" radius={[6, 6, 0, 0]}>
+                        {parseDemoFieldData('pendidikan').map((_, index) => (
+                          <Cell key={`cell-${index}`} fill={['#f59e0b', '#3b82f6', '#10b981', '#ec4899', '#8b5cf6', '#06b6d4', '#ef4444', '#64748b'][index % 8]} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* 3. Usia */}
+            <Card className="border border-slate-200/80 dark:border-gray-800 shadow-xl shadow-slate-200/40 dark:shadow-black/20 bg-white dark:bg-gray-900 rounded-3xl overflow-hidden flex flex-col">
+              <CardHeader className="border-b border-slate-100 dark:border-gray-800 bg-slate-50/50 dark:bg-gray-800/40 p-4">
+                <CardTitle className="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-white flex items-center justify-center gap-2">
+                  <UserCheck className="size-4 text-rose-500" />
+                  <span>Usia <span className="text-slate-400 font-normal">Responden</span></span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-4 flex-1 flex flex-col items-center justify-center">
+                {loading ? (
+                  <div className="h-48 animate-pulse rounded-2xl bg-slate-100 dark:bg-gray-800 w-full" />
+                ) : (
+                  <ResponsiveContainer width="100%" height={220}>
+                    <BarChart data={parseDemoFieldData('usia')}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
+                      <XAxis dataKey="name" tick={{ fontSize: 9, fontWeight: 700 }} interval={0} angle={-35} textAnchor="end" height={55} />
+                      <YAxis tick={{ fontSize: 10, fontWeight: 600 }} allowDecimals={false} />
+                      <Tooltip contentStyle={{ borderRadius: '14px', fontWeight: 600, fontSize: '11px' }} />
+                      <Bar dataKey="value" name="Jumlah" radius={[6, 6, 0, 0]}>
+                        {parseDemoFieldData('usia').map((_, index) => (
+                          <Cell key={`cell-${index}`} fill={['#f43f5e', '#ec4899', '#f59e0b', '#eab308', '#84cc16'][index % 5]} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* 4. Pekerjaan */}
+            <Card className="border border-slate-200/80 dark:border-gray-800 shadow-xl shadow-slate-200/40 dark:shadow-black/20 bg-white dark:bg-gray-900 rounded-3xl overflow-hidden flex flex-col">
+              <CardHeader className="border-b border-slate-100 dark:border-gray-800 bg-slate-50/50 dark:bg-gray-800/40 p-4">
+                <CardTitle className="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-white flex items-center justify-center gap-2">
+                  <Briefcase className="size-4 text-teal-500" />
+                  <span>Pekerjaan <span className="text-slate-400 font-normal">Responden</span></span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-4 flex-1 flex flex-col items-center justify-center">
+                {loading ? (
+                  <div className="h-48 animate-pulse rounded-2xl bg-slate-100 dark:bg-gray-800 w-full" />
+                ) : (
+                  <ResponsiveContainer width="100%" height={220}>
+                    <BarChart data={parseDemoFieldData('pekerjaan')}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
+                      <XAxis dataKey="name" tick={{ fontSize: 9, fontWeight: 700 }} interval={0} angle={-35} textAnchor="end" height={55} />
+                      <YAxis tick={{ fontSize: 10, fontWeight: 600 }} allowDecimals={false} />
+                      <Tooltip contentStyle={{ borderRadius: '14px', fontWeight: 600, fontSize: '11px' }} />
+                      <Bar dataKey="value" name="Jumlah" radius={[6, 6, 0, 0]}>
+                        {parseDemoFieldData('pekerjaan').map((_, index) => (
+                          <Cell key={`cell-${index}`} fill={['#10b981', '#14b8a6', '#06b6d4', '#3b82f6', '#6366f1', '#8b5cf6'][index % 6]} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* BOTTOM: 1 Baris dengan 2 Chart (Rincian Nilai Konversi Per Unsur & Tren Nilai) */}
+          <div className="mb-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Chart 1: Rincian Per Unsur (Bar Chart) */}
-            <Card className="lg:col-span-2 border border-slate-200/80 dark:border-gray-800 shadow-xl shadow-slate-200/40 dark:shadow-black/20 bg-white dark:bg-gray-900 rounded-3xl overflow-hidden">
+            <Card className="border border-slate-200/80 dark:border-gray-800 shadow-xl shadow-slate-200/40 dark:shadow-black/20 bg-white dark:bg-gray-900 rounded-3xl overflow-hidden">
               <CardHeader className="border-b border-slate-100 dark:border-gray-800 bg-slate-50/50 dark:bg-gray-800/40 p-5">
                 <CardTitle className="text-sm font-extrabold text-slate-900 dark:text-white">
                   Rincian Nilai Konversi Per Unsur ({indexType})
@@ -353,10 +481,10 @@ export default function HasilPage() {
                 {loading ? (
                   <div className="h-64 animate-pulse rounded-2xl bg-slate-100 dark:bg-gray-800" />
                 ) : (
-                  <ResponsiveContainer width="100%" height={320}>
+                  <ResponsiveContainer width="100%" height={300}>
                     <BarChart data={parseUnsurBarData()}>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
-                      <XAxis dataKey="name" tick={{ fontSize: 10, fontWeight: 700 }} interval={0} angle={-15} textAnchor="end" height={60} />
+                      <XAxis dataKey="name" tick={{ fontSize: 9, fontWeight: 700 }} interval={0} angle={-25} textAnchor="end" height={60} />
                       <YAxis domain={[0, 100]} tick={{ fontSize: 11, fontWeight: 600 }} />
                       <Tooltip contentStyle={{ borderRadius: '16px', fontWeight: 600, boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1)' }} />
                       <Bar dataKey="Nilai Konversi" fill="#10b981" radius={[8, 8, 0, 0]} />
@@ -366,44 +494,7 @@ export default function HasilPage() {
               </CardContent>
             </Card>
 
-            {/* Chart 2: Chart Lingkaran (Pie / Donut Chart) */}
-            <Card className="border border-slate-200/80 dark:border-gray-800 shadow-xl shadow-slate-200/40 dark:shadow-black/20 bg-white dark:bg-gray-900 rounded-3xl overflow-hidden">
-              <CardHeader className="border-b border-slate-100 dark:border-gray-800 bg-slate-50/50 dark:bg-gray-800/40 p-5">
-                <CardTitle className="text-sm font-extrabold text-slate-900 dark:text-white">
-                  Proporsi Responden (Gender)
-                </CardTitle>
-                <p className="text-xs text-slate-400 font-medium mt-0.5">Persentase sebaran responden yang berpartisipasi</p>
-              </CardHeader>
-              <CardContent className="p-5 flex flex-col items-center justify-center">
-                {loading ? (
-                  <div className="h-64 animate-pulse rounded-2xl bg-slate-100 dark:bg-gray-800 w-full" />
-                ) : (
-                  <ResponsiveContainer width="100%" height={320}>
-                    <PieChart>
-                      <Pie
-                        data={parsePieData()}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={65}
-                        outerRadius={95}
-                        paddingAngle={5}
-                        dataKey="value"
-                      >
-                        {parsePieData().map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
-                        ))}
-                      </Pie>
-                      <Tooltip contentStyle={{ borderRadius: '16px', fontWeight: 600 }} />
-                      <Legend verticalAlign="bottom" height={36} />
-                    </PieChart>
-                  </ResponsiveContainer>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Chart 3: Tren Nilai Bulanan (Line Chart) */}
-          <div className="mb-8">
+            {/* Chart 2: Tren Nilai Bulanan (Line Chart) */}
             <Card className="border border-slate-200/80 dark:border-gray-800 shadow-xl shadow-slate-200/40 dark:shadow-black/20 bg-white dark:bg-gray-900 rounded-3xl overflow-hidden">
               <CardHeader className="border-b border-slate-100 dark:border-gray-800 bg-slate-50/50 dark:bg-gray-800/40 p-5">
                 <CardTitle className="text-sm font-extrabold text-slate-900 dark:text-white">{t('results.trend')}</CardTitle>

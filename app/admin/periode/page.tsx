@@ -4,11 +4,15 @@ import { useEffect, useState } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Plus, Pencil, Trash2, Loader2, Calendar, Search, CheckCircle2, AlertTriangle, Clock, Sparkles, CalendarDays, Check } from 'lucide-react'
+import { 
+  Plus, Pencil, Trash2, Loader2, Calendar, Search, CheckCircle2, AlertTriangle, 
+  Clock, Sparkles, CalendarDays, Check, XCircle, Info 
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
+import { Switch } from '@/components/ui/switch'
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select'
 import {
   Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
@@ -24,13 +28,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 import type { SurveyPeriod } from '@/types'
-import { setActivePeriodAction } from './actions'
+import { setActivePeriodAction, deactivatePeriodAction } from './actions'
 
 const periodSchema = z.object({
   period_type: z.enum(['triwulan', 'semester', 'tahunan']),
   label: z.string().min(1, 'Label wajib diisi'),
   start_date: z.string().min(1, 'Tanggal mulai wajib diisi'),
   end_date: z.string().min(1, 'Tanggal selesai wajib diisi'),
+  is_active: z.boolean(),
 })
 
 type PeriodForm = z.infer<typeof periodSchema>
@@ -54,10 +59,11 @@ export default function AdminPeriodePage() {
 
   const { register, handleSubmit, reset, setValue, control, formState: { errors } } = useForm<PeriodForm>({
     resolver: zodResolver(periodSchema),
-    defaultValues: { period_type: 'triwulan', label: '', start_date: '', end_date: '' },
+    defaultValues: { period_type: 'triwulan', label: '', start_date: '', end_date: '', is_active: false },
   })
 
   const pt = useWatch({ control, name: 'period_type' })
+  const isActiveForm = useWatch({ control, name: 'is_active' })
 
   function handleAutoGenerate() {
     const year = autoYear
@@ -113,7 +119,7 @@ export default function AdminPeriodePage() {
 
   function openCreate() {
     setEditing(null)
-    reset({ period_type: 'triwulan', label: '', start_date: '', end_date: '' })
+    reset({ period_type: 'triwulan', label: '', start_date: '', end_date: '', is_active: false })
     setDialogOpen(true)
   }
 
@@ -124,21 +130,52 @@ export default function AdminPeriodePage() {
       label: p.label,
       start_date: p.start_date,
       end_date: p.end_date,
+      is_active: p.is_active || false,
     })
     setDialogOpen(true)
   }
 
   async function onSubmit(data: PeriodForm) {
     setSaving(true)
+    let targetId = editing?.id
+
     if (editing) {
-      const { error } = await supabase.from('survey_periods').update(data).eq('id', editing.id)
-      if (error) { toast.error(error.message || 'Gagal memperbarui periode'); setSaving(false); return }
-      toast.success('Periode survei berhasil diperbarui')
+      const { error } = await supabase.from('survey_periods').update({
+        period_type: data.period_type,
+        label: data.label,
+        start_date: data.start_date,
+        end_date: data.end_date,
+      }).eq('id', editing.id)
+      
+      if (error) { 
+        toast.error(error.message || 'Gagal memperbarui periode')
+        setSaving(false)
+        return 
+      }
     } else {
-      const { error } = await supabase.from('survey_periods').insert({ ...data, is_active: false })
-      if (error) { toast.error(error.message || 'Gagal menambah periode'); setSaving(false); return }
-      toast.success('Periode survei berhasil ditambah')
+      const { data: inserted, error } = await supabase.from('survey_periods').insert({
+        period_type: data.period_type,
+        label: data.label,
+        start_date: data.start_date,
+        end_date: data.end_date,
+        is_active: false,
+      }).select().single()
+
+      if (error) { 
+        toast.error(error.message || 'Gagal menambah periode')
+        setSaving(false)
+        return 
+      }
+      targetId = inserted.id
     }
+
+    if (data.is_active && targetId) {
+      await setActivePeriodAction(targetId)
+    } else if (!data.is_active && targetId && editing?.is_active) {
+      await deactivatePeriodAction(targetId)
+    }
+
+    toast.success(editing ? 'Periode survei berhasil diperbarui' : 'Periode survei berhasil ditambah')
     setDialogOpen(false)
     setSaving(false)
     fetchPeriods()
@@ -163,17 +200,30 @@ export default function AdminPeriodePage() {
     fetchPeriods()
   }
 
-  async function setActive(id: string) {
+  async function toggleActiveStatus(p: SurveyPeriod) {
     setSettingActive(true)
-    const result = await setActivePeriodAction(id)
-    if (!result.success) { 
-      toast.error(result.error || 'Gagal mengaktifkan periode')
-      setSettingActive(false)
-      return 
+    if (p.is_active) {
+      const result = await deactivatePeriodAction(p.id)
+      if (!result.success) {
+        toast.error(result.error || 'Gagal menonaktifkan periode')
+      } else {
+        toast.success(`Periode "${p.label}" telah dinonaktifkan`)
+      }
+    } else {
+      const result = await setActivePeriodAction(p.id)
+      if (!result.success) {
+        toast.error(result.error || 'Gagal mengaktifkan periode')
+      } else {
+        toast.success(`Periode "${p.label}" sekarang aktif`)
+      }
     }
-    toast.success('Periode aktif berhasil diubah')
     setSettingActive(false)
     fetchPeriods()
+  }
+
+  const isDateInRange = (start: string, end: string) => {
+    const today = new Date().toISOString().split('T')[0]
+    return today >= start && today <= end
   }
 
   const getTypeBadge = (type: string) => {
@@ -241,6 +291,18 @@ export default function AdminPeriodePage() {
         </Button>
       </div>
 
+      {/* Info Tip Banner */}
+      <div className="bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-800/80 rounded-2xl p-4 text-emerald-950 dark:text-emerald-200 flex items-start gap-3 shadow-xs">
+        <Info className="size-5 text-emerald-600 shrink-0 mt-0.5" />
+        <div className="text-xs leading-relaxed space-y-0.5">
+          <p className="font-bold">Fleksibilitas Status Aktif Periode:</p>
+          <p className="text-emerald-900/90 dark:text-emerald-300">
+            Anda bebas mengaktifkan atau menonaktifkan periode survei manapun secara manual kapan saja dengan menekan tombol <strong>Aktifkan / Nonaktifkan</strong>. 
+            Periode dengan status <strong className="text-emerald-700 dark:text-emerald-300">Sedang Aktif</strong> akan selalu digunakan sebagai periode penerima survei publik, meskipun tanggalnya sudah lewat atau belum dimulai.
+          </p>
+        </div>
+      </div>
+
       {/* Main Table Card */}
       <Card className="border border-slate-200/80 dark:border-gray-800 shadow-xl shadow-slate-200/40 dark:shadow-black/20 bg-white dark:bg-gray-900 rounded-3xl overflow-hidden">
         
@@ -275,84 +337,108 @@ export default function AdminPeriodePage() {
                 <TableHead className="text-xs font-bold text-slate-700 uppercase tracking-wider">Tanggal Mulai</TableHead>
                 <TableHead className="text-xs font-bold text-slate-700 uppercase tracking-wider">Tanggal Selesai</TableHead>
                 <TableHead className="text-xs font-bold text-slate-700 uppercase tracking-wider">Status</TableHead>
-                <TableHead className="w-48 text-right text-xs font-bold text-slate-700 uppercase tracking-wider pr-6">Aksi</TableHead>
+                <TableHead className="w-52 text-right text-xs font-bold text-slate-700 uppercase tracking-wider pr-6">Aksi</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredPeriods.map((p) => (
-                <TableRow key={p.id} className={`group hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors ${p.is_active ? 'bg-emerald-50/60 dark:bg-emerald-950/20' : ''}`}>
-                  
-                  <TableCell className="pl-6 font-semibold text-slate-900 dark:text-white">
-                    <div className="flex items-center gap-2.5">
-                      <div className={`flex size-8 items-center justify-center rounded-xl ${p.is_active ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-500'}`}>
-                        <CalendarDays className="size-4" />
+              {filteredPeriods.map((p) => {
+                const inRange = isDateInRange(p.start_date, p.end_date)
+
+                return (
+                  <TableRow key={p.id} className={`group hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors ${p.is_active ? 'bg-emerald-50/60 dark:bg-emerald-950/20' : ''}`}>
+                    
+                    <TableCell className="pl-6 font-semibold text-slate-900 dark:text-white">
+                      <div className="flex items-center gap-2.5">
+                        <div className={`flex size-8 items-center justify-center rounded-xl ${p.is_active ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-500'}`}>
+                          <CalendarDays className="size-4" />
+                        </div>
+                        <span className="text-sm font-bold text-slate-900 dark:text-white">{p.label}</span>
                       </div>
-                      <span className="text-sm font-bold text-slate-900 dark:text-white">{p.label}</span>
-                    </div>
-                  </TableCell>
+                    </TableCell>
 
-                  <TableCell>
-                    {getTypeBadge(p.period_type)}
-                  </TableCell>
+                    <TableCell>
+                      {getTypeBadge(p.period_type)}
+                    </TableCell>
 
-                  <TableCell className="font-mono text-xs font-medium text-slate-600 dark:text-slate-300">
-                    {p.start_date}
-                  </TableCell>
+                    <TableCell className="font-mono text-xs font-medium text-slate-600 dark:text-slate-300">
+                      {p.start_date}
+                    </TableCell>
 
-                  <TableCell className="font-mono text-xs font-medium text-slate-600 dark:text-slate-300">
-                    {p.end_date}
-                  </TableCell>
+                    <TableCell className="font-mono text-xs font-medium text-slate-600 dark:text-slate-300">
+                      {p.end_date}
+                    </TableCell>
 
-                  <TableCell>
-                    {p.is_active ? (
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200/80">
-                        <CheckCircle2 className="size-3.5 text-emerald-600" />
-                        Sedang Aktif
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 border border-slate-200">
-                        <Clock className="size-3.5 text-slate-400" />
-                        Nonaktif
-                      </span>
-                    )}
-                  </TableCell>
+                    <TableCell>
+                      <div className="flex flex-col items-start gap-1">
+                        {p.is_active ? (
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800">
+                            <CheckCircle2 className="size-3.5 text-emerald-600 dark:text-emerald-400" />
+                            Sedang Aktif
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 border border-slate-200 dark:bg-gray-800 dark:text-slate-400 dark:border-gray-700">
+                            <Clock className="size-3.5 text-slate-400" />
+                            Nonaktif
+                          </span>
+                        )}
 
-                  <TableCell className="text-right pr-6">
-                    <div className="flex justify-end items-center gap-1.5">
-                      {!p.is_active && (
+                        {p.is_active && !inRange && (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-900 px-2 py-0.5 rounded-md" title="Diaktifkan secara manual di luar rentang tanggal">
+                            <Sparkles className="size-3 text-amber-500" />
+                            <span>Buka Manual (Luar Jadwal)</span>
+                          </span>
+                        )}
+                      </div>
+                    </TableCell>
+
+                    <TableCell className="text-right pr-6">
+                      <div className="flex justify-end items-center gap-1.5">
+                        {p.is_active ? (
+                          <button
+                            type="button"
+                            onClick={() => toggleActiveStatus(p)}
+                            disabled={settingActive}
+                            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 font-bold text-xs transition-all cursor-pointer shadow-xs disabled:opacity-50"
+                            title="Nonaktifkan periode ini"
+                          >
+                            <XCircle className="size-3.5 text-rose-600" />
+                            <span>Nonaktifkan</span>
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => toggleActiveStatus(p)}
+                            disabled={settingActive}
+                            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200/80 font-bold text-xs transition-all cursor-pointer shadow-xs disabled:opacity-50"
+                            title="Aktifkan periode ini secara manual"
+                          >
+                            <Check className="size-3.5 text-emerald-600" />
+                            <span>Aktifkan</span>
+                          </button>
+                        )}
+
                         <button
                           type="button"
-                          onClick={() => setActive(p.id)}
-                          disabled={settingActive}
-                          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200/80 font-bold text-xs transition-all cursor-pointer shadow-xs disabled:opacity-50"
-                          title="Tetapkan sebagai periode aktif"
+                          onClick={() => openEdit(p)}
+                          className="flex size-8 items-center justify-center rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200 transition-all cursor-pointer"
+                          title="Edit Periode"
                         >
-                          <Check className="size-3.5 text-emerald-600" />
-                          <span>Aktifkan</span>
+                          <Pencil className="size-3.5" />
                         </button>
-                      )}
 
-                      <button
-                        type="button"
-                        onClick={() => openEdit(p)}
-                        className="flex size-8 items-center justify-center rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200 transition-all cursor-pointer"
-                        title="Edit Periode"
-                      >
-                        <Pencil className="size-3.5" />
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => setDeleteDialog(p)}
-                        className="flex size-8 items-center justify-center rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-100 transition-all cursor-pointer"
-                        title="Hapus Periode"
-                      >
-                        <Trash2 className="size-3.5" />
-                      </button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
+                        <button
+                          type="button"
+                          onClick={() => setDeleteDialog(p)}
+                          className="flex size-8 items-center justify-center rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-100 transition-all cursor-pointer"
+                          title="Hapus Periode"
+                        >
+                          <Trash2 className="size-3.5" />
+                        </button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                )
+              })}
 
               {filteredPeriods.length === 0 && (
                 <TableRow>
@@ -385,6 +471,24 @@ export default function AdminPeriodePage() {
           </div>
 
           <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-4 bg-white dark:bg-gray-900">
+            {/* Status Switch Box */}
+            <div className="flex items-center justify-between p-3.5 rounded-2xl bg-emerald-50/70 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-800/80">
+              <div>
+                <Label htmlFor="is_active" className="text-xs font-bold text-emerald-950 dark:text-emerald-200 cursor-pointer flex items-center gap-1.5">
+                  <CheckCircle2 className="size-4 text-emerald-600" />
+                  <span>Tetapkan Sebagai Periode Aktif Utama</span>
+                </Label>
+                <p className="text-[11px] text-emerald-800/80 dark:text-emerald-300/80 mt-0.5">
+                  Mengaktifkan periode ini akan menonaktifkan periode lain secara otomatis.
+                </p>
+              </div>
+              <Switch
+                id="is_active"
+                checked={isActiveForm}
+                onCheckedChange={(val) => setValue('is_active', val)}
+              />
+            </div>
+
             {/* Tipe Periode */}
             <div className="space-y-1.5">
               <Label className="text-xs font-bold text-slate-700 dark:text-slate-200">

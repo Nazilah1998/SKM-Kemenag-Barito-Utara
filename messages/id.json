@@ -28,6 +28,14 @@
     "home": "Beranda",
     "survey": "Isi Survei",
     "results": "Hasil Survei",
+    "archives": "Arsip Survei",
+    "about": "Tentang SI-ARUS",
+    "recap_ipkp": "Rekapitulasi IPKP",
+    "recap_ipak": "Rekapitulasi IPAK",
+    "archive_year": "Arsip Tahun",
+    "quarter": "Triwulan",
+    "semester": "Semester",
+    "annual": "Tahunan",
     "admin": "Admin",
     "login": "Masuk",
     "logout": "Keluar"
@@ -81,8 +89,12 @@
     "score": "Nilai",
     "no_data": "Belum ada data survei"
   },
+  "footer": {
+    "rights": "Hak Cipta Dilindungi.",
+    "motto": "Harmonis, Amanah, Profesional, Akuntabel, Kreatif, Adil dan Transparan"
+  },
   "admin": {
-    "title": "Panel Admin SIKAP",
+    "title": "Panel Admin SI-ARUS",
     "login_title": "Masuk ke Panel Admin",
     "login_email": "Email",
     "login_password": "Kata Sandi",

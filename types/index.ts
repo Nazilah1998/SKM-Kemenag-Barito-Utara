@@ -23,6 +23,7 @@ export interface Unsur {
   id: string
   index_type: 'IPKP' | 'IPAK'
   name: string
+  name_en?: string
   description: string | null
   sort_order: number
   is_active: boolean

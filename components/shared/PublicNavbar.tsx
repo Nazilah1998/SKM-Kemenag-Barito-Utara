@@ -1,10 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import Image from 'next/image'
-import { Menu, X, Home, ClipboardList, BarChart3, BookOpen, ChevronDown, LogIn } from 'lucide-react'
+import { Menu, X, Home, ClipboardList, BarChart3, BookOpen, ChevronDown, LogIn, Clock } from 'lucide-react'
 import { useI18n } from '@/components/shared/I18nProvider'
 import { SURVEY_ROUTES } from '@/lib/constants'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -27,7 +27,55 @@ export function PublicNavbar() {
   const [expandedMenu, setExpandedMenu] = useState<string | null>(null)
   const [expandedArsipType, setExpandedArsipType] = useState<string | null>(null)
   const [expandedArsipYear, setExpandedArsipYear] = useState<number | null>(null)
+  const [currentTime, setCurrentTime] = useState<string>('')
   const pathname = usePathname()
+
+  useEffect(() => {
+    const updateClock = () => {
+      const now = new Date()
+      const daysId = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu']
+      const daysEn = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+      const monthsId = [
+        'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 
+        'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+      ]
+      const monthsEn = [
+        'January', 'February', 'March', 'April', 'May', 'June',
+        'July', 'August', 'September', 'October', 'November', 'December'
+      ]
+      
+      const dayName = locale === 'en' ? daysEn[now.getDay()] : daysId[now.getDay()]
+      const monthName = locale === 'en' ? monthsEn[now.getMonth()] : monthsId[now.getMonth()]
+      const date = now.getDate()
+      const year = now.getFullYear()
+      const hours = String(now.getHours()).padStart(2, '0')
+      const minutes = String(now.getMinutes()).padStart(2, '0')
+
+      // Detect Timezone (WIB / WITA / WIT / UTC)
+      let tzLabel = 'WIB'
+      try {
+        const offsetMinutes = -now.getTimezoneOffset()
+        const offsetHours = offsetMinutes / 60
+        if (offsetHours === 7) tzLabel = 'WIB'
+        else if (offsetHours === 8) tzLabel = 'WITA'
+        else if (offsetHours === 9) tzLabel = 'WIT'
+        else if (offsetHours >= 0) tzLabel = `UTC+${offsetHours}`
+        else tzLabel = `UTC${offsetHours}`
+      } catch {
+        tzLabel = 'WIB'
+      }
+
+      if (locale === 'en') {
+        setCurrentTime(`${dayName}, ${monthName} ${date}, ${year} • ${hours}:${minutes} ${tzLabel}`)
+      } else {
+        setCurrentTime(`${dayName}, ${date} ${monthName} ${year} • ${hours}:${minutes} ${tzLabel}`)
+      }
+    }
+
+    updateClock()
+    const interval = setInterval(updateClock, 1000)
+    return () => clearInterval(interval)
+  }, [locale])
 
   const currentYear = new Date().getFullYear()
 
@@ -36,7 +84,7 @@ export function PublicNavbar() {
     const cYear = currentDate.getFullYear()
     const cQuarter = Math.floor(currentDate.getMonth() / 3) + 1
     const startYear = 2026
-    const startQuarter = 3
+    const startQuarter = 2
 
     const data = []
     for (let y = cYear; y >= startYear; y--) {
@@ -73,8 +121,8 @@ export function PublicNavbar() {
     { href: SURVEY_ROUTES.HOME, label: t('nav.home'), icon: Home },
     { href: SURVEY_ROUTES.SURVEI, label: t('nav.survey'), icon: ClipboardList },
     { href: SURVEY_ROUTES.HASIL, label: `${t('nav.results')} ${currentYear}`, icon: BarChart3 },
-    { href: '/arsip', label: 'Arsip Survei', icon: FolderArchive },
-    { href: SURVEY_ROUTES.PROFIL, label: 'Profil', icon: BookOpen },
+    { href: '/arsip', label: t('nav.archives'), icon: FolderArchive },
+    { href: SURVEY_ROUTES.PROFIL, label: t('nav.about'), icon: BookOpen },
   ]
 
   return (
@@ -84,12 +132,21 @@ export function PublicNavbar() {
         <div className="mx-auto flex h-16 w-full px-4 sm:px-6 lg:px-10 items-center justify-between">
           {/* Logo */}
           <div className="flex-1 flex justify-start">
-            <Link href={SURVEY_ROUTES.HOME} className="flex items-center gap-2.5 group">
+            <Link href={SURVEY_ROUTES.HOME} className="flex items-center gap-2.5 sm:gap-3 group">
               <div className="flex h-10 items-center justify-center">
                 <Image src="/arus.png" alt="ARUS Logo" width={80} height={40} className="object-contain drop-shadow-sm group-hover:drop-shadow-md transition-all duration-300" />
               </div>
               <div className="flex flex-col leading-none max-w-[400px]">
-                <span className="text-[10px] text-emerald-700 font-bold hidden sm:block leading-[1.3] border-l-2 border-emerald-500 pl-2">Sistem Informasi<br/>Analisis Rekapitulasi Ulasan<br/>Survei Kepuasan Masyarakat</span>
+                <span className="text-[10px] text-emerald-700 font-bold hidden sm:block leading-[1.3] border-l-2 border-emerald-500 pl-2">
+                  {locale === 'en' ? (
+                    <>Survey Review Recapitulation Analysis<br/>Information System</>
+                  ) : (
+                    <>Sistem Informasi<br/>Analisis Rekapitulasi Ulasan<br/>Survei Kepuasan Masyarakat</>
+                  )}
+                </span>
+              </div>
+              <div className="hidden sm:flex h-9 items-center justify-center pl-2 border-l border-slate-200/90 dark:border-gray-800">
+                <Image src="/Logo_PANRB.png" alt="Logo Kementerian PANRB" width={95} height={38} className="h-8 w-auto object-contain drop-shadow-xs group-hover:scale-105 transition-all duration-300" />
               </div>
             </Link>
           </div>
@@ -119,12 +176,12 @@ export function PublicNavbar() {
                     <DropdownMenuContent align="center" className="w-52 rounded-2xl p-1.5 shadow-xl border-slate-200">
                       <Link href="/hasil/ipkp">
                         <DropdownMenuItem className={cn("cursor-pointer rounded-xl py-2 text-xs font-semibold", pathname === '/hasil/ipkp' && "bg-emerald-50 text-emerald-700 font-bold")}>
-                          Rekapitulasi IPKP
+                          {t('nav.recap_ipkp')}
                         </DropdownMenuItem>
                       </Link>
                       <Link href="/hasil/ipak">
                         <DropdownMenuItem className={cn("cursor-pointer rounded-xl py-2 text-xs font-semibold", pathname === '/hasil/ipak' && "bg-emerald-50 text-emerald-700 font-bold")}>
-                          Rekapitulasi IPAK
+                          {t('nav.recap_ipak')}
                         </DropdownMenuItem>
                       </Link>
                     </DropdownMenuContent>
@@ -154,39 +211,39 @@ export function PublicNavbar() {
                         <DropdownMenuSub key={item.year}>
                           <DropdownMenuSubTrigger className="rounded-xl py-2 cursor-pointer font-bold text-xs">
                             <FolderArchive className="size-4 mr-2 text-emerald-600" />
-                            <span>Arsip Tahun {item.year}</span>
+                            <span>{locale === 'en' ? `${item.year} Archives` : `Arsip Tahun ${item.year}`}</span>
                           </DropdownMenuSubTrigger>
                           <DropdownMenuSubContent className="w-52 rounded-2xl p-1.5 shadow-xl">
                             <DropdownMenuSub>
                               <DropdownMenuSubTrigger className="rounded-xl py-1.5 cursor-pointer text-xs font-semibold">
-                                Indeks IPKP
+                                {locale === 'en' ? 'IPKP Index' : 'Indeks IPKP'}
                               </DropdownMenuSubTrigger>
                               <DropdownMenuSubContent className="w-48 rounded-xl p-1">
                                 {item.quarters.map((q) => (
                                   <Link key={q} href={`/arsip/ipkp/${item.year}/q${q}`}>
                                     <DropdownMenuItem className="cursor-pointer text-xs py-1.5 rounded-md font-medium">
-                                      Triwulan {q} ({item.year})
+                                      {locale === 'en' ? `Quarter ${q}` : `Triwulan ${q}`} ({item.year})
                                     </DropdownMenuItem>
                                   </Link>
                                 ))}
                                 {item.hasSemester1 && (
                                   <Link href={`/arsip/ipkp/${item.year}/s1`}>
                                     <DropdownMenuItem className="cursor-pointer text-xs py-1.5 rounded-md font-medium">
-                                      Semester I ({item.year})
+                                      {locale === 'en' ? 'Semester 1' : 'Semester I'} ({item.year})
                                     </DropdownMenuItem>
                                   </Link>
                                 )}
                                 {item.hasSemester2 && (
                                   <Link href={`/arsip/ipkp/${item.year}/s2`}>
                                     <DropdownMenuItem className="cursor-pointer text-xs py-1.5 rounded-md font-medium">
-                                      Semester II ({item.year})
+                                      {locale === 'en' ? 'Semester 2' : 'Semester II'} ({item.year})
                                     </DropdownMenuItem>
                                   </Link>
                                 )}
                                 {item.hasTahunan && (
                                   <Link href={`/arsip/ipkp/${item.year}/tahunan`}>
                                     <DropdownMenuItem className="cursor-pointer text-xs py-1.5 rounded-md font-bold text-emerald-700">
-                                      Tahunan ({item.year})
+                                      {locale === 'en' ? 'Annual' : 'Tahunan'} ({item.year})
                                     </DropdownMenuItem>
                                   </Link>
                                 )}
@@ -197,34 +254,34 @@ export function PublicNavbar() {
 
                             <DropdownMenuSub>
                               <DropdownMenuSubTrigger className="rounded-xl py-1.5 cursor-pointer text-xs font-semibold">
-                                Indeks IPAK
+                                {locale === 'en' ? 'IPAK Index' : 'Indeks IPAK'}
                               </DropdownMenuSubTrigger>
                               <DropdownMenuSubContent className="w-48 rounded-xl p-1">
                                 {item.quarters.map((q) => (
                                   <Link key={q} href={`/arsip/ipak/${item.year}/q${q}`}>
                                     <DropdownMenuItem className="cursor-pointer text-xs py-1.5 rounded-md font-medium">
-                                      Triwulan {q} ({item.year})
+                                      {locale === 'en' ? `Quarter ${q}` : `Triwulan ${q}`} ({item.year})
                                     </DropdownMenuItem>
                                   </Link>
                                 ))}
                                 {item.hasSemester1 && (
                                   <Link href={`/arsip/ipak/${item.year}/s1`}>
                                     <DropdownMenuItem className="cursor-pointer text-xs py-1.5 rounded-md font-medium">
-                                      Semester I ({item.year})
+                                      {locale === 'en' ? 'Semester 1' : 'Semester I'} ({item.year})
                                     </DropdownMenuItem>
                                   </Link>
                                 )}
                                 {item.hasSemester2 && (
                                   <Link href={`/arsip/ipak/${item.year}/s2`}>
                                     <DropdownMenuItem className="cursor-pointer text-xs py-1.5 rounded-md font-medium">
-                                      Semester II ({item.year})
+                                      {locale === 'en' ? 'Semester 2' : 'Semester II'} ({item.year})
                                     </DropdownMenuItem>
                                   </Link>
                                 )}
                                 {item.hasTahunan && (
                                   <Link href={`/arsip/ipak/${item.year}/tahunan`}>
                                     <DropdownMenuItem className="cursor-pointer text-xs py-1.5 rounded-md font-bold text-emerald-700">
-                                      Tahunan ({item.year})
+                                      {locale === 'en' ? 'Annual' : 'Tahunan'} ({item.year})
                                     </DropdownMenuItem>
                                   </Link>
                                 )}
@@ -241,13 +298,13 @@ export function PublicNavbar() {
               return (
                 <Link key={link.href} href={link.href}>
                   <span className={cn(
-                    'relative flex items-center gap-1.5 px-3.5 py-2 text-sm font-bold rounded-xl transition-all duration-200',
+                    'relative flex items-center gap-1.5 px-2.5 xl:px-3.5 py-1.5 text-xs xl:text-sm font-bold rounded-xl transition-all duration-200',
                     isActive
                       ? 'text-emerald-800 bg-emerald-100/80 border border-emerald-200/80 shadow-xs'
                       : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80'
                   )}>
-                    <link.icon className="size-4 text-emerald-600" />
-                    <span>{link.label}</span>
+                    <link.icon className="size-3.5 xl:size-4 text-emerald-600" />
+                    <span className="whitespace-nowrap">{link.label}</span>
                   </span>
                 </Link>
               )
@@ -258,6 +315,18 @@ export function PublicNavbar() {
           <div className="flex-1 flex justify-end items-center gap-2">
             {/* Desktop Actions */}
             <div className="hidden lg:flex items-center gap-2">
+              {/* Automatic Live Clock & Date Widget */}
+              {currentTime && (
+                <div className="hidden xl:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-50 dark:bg-gray-800 border border-slate-200/90 dark:border-gray-700 text-slate-700 dark:text-slate-200 font-mono text-[11px] xl:text-xs font-bold shadow-2xs whitespace-nowrap">
+                  <div className="relative flex size-2 items-center justify-center">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                    <span className="relative inline-flex size-1.5 rounded-full bg-emerald-500" />
+                  </div>
+                  <Clock className="size-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                  <span>{currentTime}</span>
+                </div>
+              )}
+
               {/* Language Toggle Dropdown */}
               <DropdownMenu>
                 <DropdownMenuTrigger
@@ -401,7 +470,7 @@ export function PublicNavbar() {
                                     : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
                                 )}
                               >
-                                Rekapitulasi IPKP
+                                {t('nav.recap_ipkp')}
                                 {pathname === '/hasil/ipkp' && <span className="ml-auto w-1.5 h-1.5 rounded-full bg-emerald-500" />}
                               </Link>
                               <Link
@@ -414,7 +483,7 @@ export function PublicNavbar() {
                                     : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
                                 )}
                               >
-                                Rekapitulasi IPAK
+                                {t('nav.recap_ipak')}
                                 {pathname === '/hasil/ipak' && <span className="ml-auto w-1.5 h-1.5 rounded-full bg-emerald-500" />}
                               </Link>
                             </motion.div>
@@ -461,7 +530,7 @@ export function PublicNavbar() {
                                     onClick={() => setExpandedArsipType(expandedArsipType === type ? null : type)}
                                     className="flex items-center justify-between gap-3 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-xl transition-colors ml-4"
                                   >
-                                    <span>Arsip {type}</span>
+                                    <span>{locale === 'en' ? `${type} Archives` : `Arsip ${type}`}</span>
                                     <ChevronDown className={cn("size-3.5 transition-transform duration-200", expandedArsipType === type ? "rotate-180" : "")} />
                                   </button>
                                   <AnimatePresence>
@@ -478,7 +547,7 @@ export function PublicNavbar() {
                                               onClick={() => setExpandedArsipYear(expandedArsipYear === year ? null : year)}
                                               className="flex items-center justify-between gap-3 px-4 py-2.5 text-xs font-medium text-gray-600 hover:bg-gray-50 rounded-xl transition-colors ml-8"
                                             >
-                                              <span>Tahun {year}</span>
+                                              <span>{locale === 'en' ? `Year ${year}` : `Tahun ${year}`}</span>
                                               <ChevronDown className={cn("size-3.5 transition-transform duration-200", expandedArsipYear === year ? "rotate-180" : "")} />
                                             </button>
                                             <AnimatePresence>
@@ -491,12 +560,12 @@ export function PublicNavbar() {
                                                 >
                                                   {quarters.map(q => (
                                                     <Link key={q} href={`/arsip/${type.toLowerCase()}/${year}/q${q}`} onClick={() => setOpen(false)} className={cn("px-4 py-2.5 text-xs text-gray-500 hover:text-emerald-700 hover:bg-emerald-50 rounded-xl ml-12 transition-colors", pathname === `/arsip/${type.toLowerCase()}/${year}/q${q}` ? 'bg-emerald-50 text-emerald-700 font-bold' : '')}>
-                                                      Triwulan {['I', 'II', 'III', 'IV'][q - 1]}
+                                                      {locale === 'en' ? `Quarter ${q}` : `Triwulan ${['I', 'II', 'III', 'IV'][q - 1]}`}
                                                     </Link>
                                                   ))}
-                                                  {hasSemester1 && <Link href={`/arsip/${type.toLowerCase()}/${year}/sem1`} onClick={() => setOpen(false)} className={cn("px-4 py-2.5 text-xs text-gray-500 hover:text-emerald-700 hover:bg-emerald-50 rounded-xl ml-12 transition-colors", pathname === `/arsip/${type.toLowerCase()}/${year}/sem1` ? 'bg-emerald-50 text-emerald-700 font-bold' : '')}>Semester 1</Link>}
-                                                  {hasSemester2 && <Link href={`/arsip/${type.toLowerCase()}/${year}/sem2`} onClick={() => setOpen(false)} className={cn("px-4 py-2.5 text-xs text-gray-500 hover:text-emerald-700 hover:bg-emerald-50 rounded-xl ml-12 transition-colors", pathname === `/arsip/${type.toLowerCase()}/${year}/sem2` ? 'bg-emerald-50 text-emerald-700 font-bold' : '')}>Semester 2</Link>}
-                                                  {hasTahunan && <Link href={`/arsip/${type.toLowerCase()}/${year}/tahunan`} onClick={() => setOpen(false)} className={cn("px-4 py-2.5 text-xs hover:text-emerald-700 hover:bg-emerald-50 rounded-xl ml-12 font-semibold transition-colors", pathname === `/arsip/${type.toLowerCase()}/${year}/tahunan` ? 'bg-emerald-50 text-emerald-700 font-bold' : 'text-gray-600')}>Tahunan</Link>}
+                                                  {hasSemester1 && <Link href={`/arsip/${type.toLowerCase()}/${year}/sem1`} onClick={() => setOpen(false)} className={cn("px-4 py-2.5 text-xs text-gray-500 hover:text-emerald-700 hover:bg-emerald-50 rounded-xl ml-12 transition-colors", pathname === `/arsip/${type.toLowerCase()}/${year}/sem1` ? 'bg-emerald-50 text-emerald-700 font-bold' : '')}>{locale === 'en' ? 'Semester 1' : 'Semester 1'}</Link>}
+                                                  {hasSemester2 && <Link href={`/arsip/${type.toLowerCase()}/${year}/sem2`} onClick={() => setOpen(false)} className={cn("px-4 py-2.5 text-xs text-gray-500 hover:text-emerald-700 hover:bg-emerald-50 rounded-xl ml-12 transition-colors", pathname === `/arsip/${type.toLowerCase()}/${year}/sem2` ? 'bg-emerald-50 text-emerald-700 font-bold' : '')}>{locale === 'en' ? 'Semester 2' : 'Semester 2'}</Link>}
+                                                  {hasTahunan && <Link href={`/arsip/${type.toLowerCase()}/${year}/tahunan`} onClick={() => setOpen(false)} className={cn("px-4 py-2.5 text-xs hover:text-emerald-700 hover:bg-emerald-50 rounded-xl ml-12 font-semibold transition-colors", pathname === `/arsip/${type.toLowerCase()}/${year}/tahunan` ? 'bg-emerald-50 text-emerald-700 font-bold' : 'text-gray-600')}>{locale === 'en' ? 'Annual' : 'Tahunan'}</Link>}
                                                 </motion.div>
                                               )}
                                             </AnimatePresence>
@@ -543,7 +612,7 @@ export function PublicNavbar() {
               {/* Drawer Footer */}
               <div className="px-4 py-4 border-t border-gray-100 space-y-4">
                 <div className="space-y-2">
-                  <p className="px-3 pb-1 text-[11px] uppercase font-semibold text-gray-400 tracking-wider">Bahasa</p>
+                  <p className="px-3 pb-1 text-[11px] uppercase font-semibold text-gray-400 tracking-wider">{t('common.language')}</p>
                   <div className="grid grid-cols-2 gap-2">
                     <button
                       onClick={() => { setLocale('id'); setOpen(false) }}

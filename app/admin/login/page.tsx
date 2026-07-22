@@ -15,12 +15,7 @@ import {
   Eye,
   EyeOff,
   ShieldCheck,
-  BarChart3,
-  Sparkles,
   ArrowLeft,
-  CheckCircle2,
-  Building2,
-  FileText,
   Shield,
 } from "lucide-react";
 import { motion } from "framer-motion";
@@ -146,33 +141,9 @@ export default function AdminLoginPage() {
       {/* KIRI: Interactive Animated Branding Panel (Desktop Only)                   */}
       {/* ========================================================================= */}
       <div className="relative hidden w-1/2 flex-col justify-between overflow-hidden bg-gradient-to-br from-emerald-900 via-emerald-800 to-teal-950 p-12 lg:flex">
-        {/* Animated Dynamic Glowing Orbs */}
-        <motion.div
-          animate={{
-            scale: [1, 1.2, 1],
-            opacity: [0.3, 0.5, 0.3],
-            x: [0, 30, 0],
-            y: [0, -20, 0],
-          }}
-          transition={{ repeat: Infinity, duration: 10, ease: "easeInOut" }}
-          className="absolute -left-20 -top-20 size-[500px] rounded-full bg-emerald-500/20 blur-[100px]"
-        />
-        <motion.div
-          animate={{
-            scale: [1, 1.3, 1],
-            opacity: [0.2, 0.4, 0.2],
-            x: [0, -40, 0],
-            y: [0, 40, 0],
-          }}
-          transition={{
-            repeat: Infinity,
-            duration: 12,
-            ease: "easeInOut",
-            delay: 2,
-          }}
-          className="absolute -bottom-20 -right-20 size-[450px] rounded-full bg-teal-400/20 blur-[110px]"
-        />
-
+        {/* Subtle Glowing Orb */}
+        <div className="absolute -left-20 -top-20 size-[500px] rounded-full bg-emerald-500/10 blur-[100px]" />
+        
         {/* Top Header Logo */}
         <div className="relative z-10 flex items-center gap-3">
           <div className="flex size-12 items-center justify-center rounded-2xl bg-white/10 p-2.5 shadow-lg backdrop-blur-md border border-white/20">
@@ -186,7 +157,7 @@ export default function AdminLoginPage() {
           </div>
           <div>
             <h2 className="text-xl font-bold text-white tracking-wide">
-              SI-ARUS / SIKAP
+              SI-ARUS
             </h2>
             <p className="text-xs font-medium text-emerald-200/80">
               Kemenag Kab. Barito Utara
@@ -194,21 +165,8 @@ export default function AdminLoginPage() {
           </div>
         </div>
 
-        {/* Floating Animated Cards & Hero Title */}
+        {/* Hero Title & Description */}
         <div className="relative z-10 my-auto py-10">
-          {/* Badge Tag */}
-          <motion.div
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="mb-6 inline-flex items-center gap-2 rounded-full border border-emerald-400/30 bg-emerald-500/10 px-4 py-1.5 backdrop-blur-md"
-          >
-            <Sparkles className="size-4 text-emerald-300 animate-pulse" />
-            <span className="text-xs font-semibold text-emerald-200 tracking-wide uppercase">
-              Portal Administrator Terpadu
-            </span>
-          </motion.div>
-
           <motion.h1
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -225,103 +183,17 @@ export default function AdminLoginPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.2 }}
-            className="max-w-xl text-base text-emerald-100/80 leading-relaxed mb-10"
+            className="max-w-xl text-base text-emerald-100/80 leading-relaxed"
           >
             Kelola dan pantau rekapitulasi nilai Indeks Persepsi Kualitas
             Pelayanan (IPKP) dan Indeks Persepsi Anti Korupsi (IPAK) secara
             transparan dan terintegrasi.
           </motion.p>
-
-          {/* Animated Interactive Feature Cards Banner */}
-          <div className="grid grid-cols-2 gap-4 max-w-lg">
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.6, delay: 0.3 }}
-              whileHover={{ y: -4, transition: { duration: 0.2 } }}
-              className="flex items-center gap-3.5 rounded-2xl border border-white/10 bg-white/10 p-4 shadow-xl backdrop-blur-md"
-            >
-              <div className="flex size-11 items-center justify-center rounded-xl bg-emerald-400/20 text-emerald-300 shrink-0">
-                <BarChart3 className="size-6" />
-              </div>
-              <div>
-                <h4 className="text-sm font-semibold text-white">
-                  Analisis Real-time
-                </h4>
-                <p className="text-xs text-emerald-200/70">
-                  Rekapitulasi IPKP & IPAK
-                </p>
-              </div>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.6, delay: 0.4 }}
-              whileHover={{ y: -4, transition: { duration: 0.2 } }}
-              className="flex items-center gap-3.5 rounded-2xl border border-white/10 bg-white/10 p-4 shadow-xl backdrop-blur-md"
-            >
-              <div className="flex size-11 items-center justify-center rounded-xl bg-teal-400/20 text-teal-300 shrink-0">
-                <ShieldCheck className="size-6" />
-              </div>
-              <div>
-                <h4 className="text-sm font-semibold text-white">
-                  Integritas Data
-                </h4>
-                <p className="text-xs text-emerald-200/70">
-                  Aman & Terverifikasi
-                </p>
-              </div>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.6, delay: 0.5 }}
-              whileHover={{ y: -4, transition: { duration: 0.2 } }}
-              className="flex items-center gap-3.5 rounded-2xl border border-white/10 bg-white/10 p-4 shadow-xl backdrop-blur-md"
-            >
-              <div className="flex size-11 items-center justify-center rounded-xl bg-emerald-400/20 text-emerald-300 shrink-0">
-                <FileText className="size-6" />
-              </div>
-              <div>
-                <h4 className="text-sm font-semibold text-white">
-                  Arsip Survei
-                </h4>
-                <p className="text-xs text-emerald-200/70">
-                  Triwulan, Sem. & Tahunan
-                </p>
-              </div>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.6, delay: 0.6 }}
-              whileHover={{ y: -4, transition: { duration: 0.2 } }}
-              className="flex items-center gap-3.5 rounded-2xl border border-white/10 bg-white/10 p-4 shadow-xl backdrop-blur-md"
-            >
-              <div className="flex size-11 items-center justify-center rounded-xl bg-amber-400/20 text-amber-300 shrink-0">
-                <Building2 className="size-6" />
-              </div>
-              <div>
-                <h4 className="text-sm font-semibold text-white">
-                  Kemenag Barito Utara
-                </h4>
-                <p className="text-xs text-emerald-200/70">
-                  Layanan Publik PTSP
-                </p>
-              </div>
-            </motion.div>
-          </div>
         </div>
 
         {/* Footer info */}
-        <div className="relative z-10 flex items-center justify-between text-xs text-emerald-200/60 pt-6 border-t border-white/10">
-          <div className="flex items-center gap-2">
-            <CheckCircle2 className="size-4 text-emerald-400" />
-            <span>Terhubung ke Pusdatin Kemenag Barito Utara Terpusat</span>
-          </div>
+        <div className="relative z-10 text-xs text-emerald-200/40 pt-6 border-t border-white/5">
+          <span>Kementerian Agama Kabupaten Barito Utara</span>
         </div>
       </div>
 
