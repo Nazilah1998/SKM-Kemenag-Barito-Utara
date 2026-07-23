@@ -93,7 +93,7 @@ export default function ArsipPage() {
         supabase.rpc('fn_index_summary', { p_start_date: dates.start, p_end_date: dates.end }),
         supabase.rpc('fn_index_summary_by_service', { p_start_date: dates.start, p_end_date: dates.end }),
         supabase.rpc('fn_index_trend', { p_start_date: dates.start, p_end_date: dates.end }),
-        supabase.from('responses').select('id', { count: 'exact', head: true }).gte('submitted_at', dates.start).lte('submitted_at', dates.end),
+        supabase.rpc('get_response_count', { p_start_date: dates.start, p_end_date: dates.end }),
         supabase.rpc('fn_unsur_summary', { p_start_date: dates.start, p_end_date: dates.end }),
         supabase.rpc('fn_demographic_summary', { p_start_date: dates.start, p_end_date: dates.end }),
         supabase.from('services').select('*').eq('is_active', true).order('name', { ascending: true }),
@@ -105,7 +105,7 @@ export default function ArsipPage() {
       if (unsurRes.data) setUnsurSummary(unsurRes.data as UnsurSummary[])
       if (demoRes.data) setDemoSummary(demoRes.data as DemographicSummary[])
       if (servicesRes.data) setAllServices(servicesRes.data)
-      if (countRes.count !== null) setTotalResponses(countRes.count)
+      if (typeof countRes.data === 'number') setTotalResponses(countRes.data)
 
       setLoading(false)
     }

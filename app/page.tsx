@@ -57,19 +57,44 @@ export default function HomePage() {
 
     setActivePeriod(period)
 
-    // 2. Count responses for active period
+    // 2. Count responses for active period using vw_total_responses / RPC / combined view
+    let responseCount = 0
+
     if (period?.id) {
-      const { count } = await supabaseClient
-        .from('responses')
-        .select('id', { count: 'exact', head: true })
+      const { data: vData } = await supabaseClient
+        .from('vw_total_responses')
+        .select('total_count')
         .eq('period_id', period.id)
-      setTotalResponses(count || 0)
-    } else {
-      const { count } = await supabaseClient
-        .from('responses')
-        .select('id', { count: 'exact', head: true })
-      setTotalResponses(count || 0)
+        .maybeSingle()
+
+      if (vData && typeof vData.total_count === 'number') {
+        responseCount = vData.total_count
+      } else {
+        const { data: rpcData } = await supabaseClient.rpc('get_response_count', {
+          p_period_id: period.id,
+        })
+        if (typeof rpcData === 'number') {
+          responseCount = rpcData
+        }
+      }
     }
+
+    if (responseCount === 0) {
+      const { data: allTotals } = await supabaseClient
+        .from('vw_total_responses')
+        .select('total_count')
+
+      if (allTotals && allTotals.length > 0) {
+        responseCount = allTotals.reduce((acc, curr) => acc + (curr.total_count || 0), 0)
+      } else {
+        const { data: rpcAll } = await supabaseClient.rpc('get_response_count', {})
+        if (typeof rpcAll === 'number') {
+          responseCount = rpcAll
+        }
+      }
+    }
+
+    setTotalResponses(responseCount)
   }
 
   useEffect(() => {

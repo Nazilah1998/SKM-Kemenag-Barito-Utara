@@ -441,3 +441,34 @@ ALTER TABLE kemenag_survey.responses ENABLE ROW LEVEL SECURITY;
 ALTER TABLE kemenag_survey.response_demographics ENABLE ROW LEVEL SECURITY;
 ALTER TABLE kemenag_survey.response_answers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE kemenag_survey.app_settings ENABLE ROW LEVEL SECURITY;
+
+-- ============================================================
+-- VIEW & RPC FUNCTION FOR PUBLIC RESPONSE COUNT (SECURITY DEFINER)
+-- ============================================================
+CREATE OR REPLACE VIEW kemenag_survey.vw_total_responses AS
+SELECT period_id, count(*)::integer AS total_count
+FROM kemenag_survey.responses
+GROUP BY period_id;
+
+GRANT SELECT ON kemenag_survey.vw_total_responses TO anon, authenticated, public;
+
+CREATE OR REPLACE FUNCTION kemenag_survey.get_response_count(
+  p_period_id uuid DEFAULT NULL,
+  p_start_date timestamptz DEFAULT NULL,
+  p_end_date timestamptz DEFAULT NULL
+)
+RETURNS integer
+LANGUAGE sql
+SECURITY DEFINER
+STABLE
+AS $$
+  SELECT COUNT(*)::integer
+  FROM kemenag_survey.responses
+  WHERE (p_period_id IS NULL OR period_id = p_period_id)
+    AND (p_start_date IS NULL OR submitted_at >= p_start_date)
+    AND (p_end_date IS NULL OR submitted_at <= p_end_date);
+$$;
+
+GRANT EXECUTE ON FUNCTION kemenag_survey.get_response_count(uuid, timestamptz, timestamptz) TO anon, authenticated, public;
+
+

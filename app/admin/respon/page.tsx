@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, useMemo } from 'react'
 import { 
   Eye, Trash2, Loader2, Search, X, ClipboardList, UserCheck, UserX, ShieldCheck, 
-  ShieldAlert, Building2, Filter, MessageSquareText, ListTodo, Star, User,
+  Building2, Filter, MessageSquareText, ListTodo, Star, User,
   Laugh, Smile, Frown, Angry, Printer, Calendar, Phone, FileText, ChevronLeft, ChevronRight
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -466,46 +466,44 @@ export default function AdminResponPage() {
         </CardContent>
       </Card>
 
-      {/* Modern Detail Respon Modal Dialog (85% Full Width Layout) */}
+      {/* Detail Respon Modal Dialog (85% Full Width Layout) */}
       <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
-        <DialogContent className="w-[95vw] sm:w-[85vw] max-w-[85vw] max-h-[92vh] overflow-y-auto rounded-3xl p-0 border border-slate-200/90 dark:border-gray-800 shadow-2xl bg-white dark:bg-gray-900">
+        <DialogContent className="!w-[85vw] !max-w-[85vw] max-h-[90vh] overflow-y-auto rounded-3xl p-0 border border-slate-200/80 dark:border-gray-800 shadow-2xl bg-white dark:bg-gray-900">
           
           {/* Header Banner */}
-          <div className="bg-gradient-to-r from-teal-950 via-emerald-900 to-teal-900 p-6 sm:p-8 text-white">
-            <div className="flex items-center justify-between flex-wrap gap-4">
+          <div className="bg-slate-900 dark:bg-gray-950 border-b border-slate-800 p-6 sm:p-8 text-white relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+            <div className="flex items-center justify-between flex-wrap gap-4 relative z-10">
               <div className="flex items-center gap-4">
-                <div className="flex size-14 items-center justify-center rounded-2xl bg-white/10 backdrop-blur-md text-emerald-300 border border-white/10 shadow-lg">
-                  <UserCheck className="size-7" />
+                <div className="flex size-12 sm:size-14 items-center justify-center rounded-2xl bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 shadow-inner shrink-0">
+                  <FileText className="size-6 sm:size-7 text-emerald-400" />
                 </div>
                 <div>
-                  <DialogTitle className="text-xl sm:text-2xl font-black text-white tracking-tight flex items-center gap-2">
+                  <DialogTitle className="text-xl sm:text-2xl font-black text-white tracking-tight flex items-center gap-3">
                     <span>Detail Rincian Respon Survei</span>
-                    <Badge className="bg-emerald-500/30 text-emerald-200 border-emerald-400/40 text-xs font-bold px-2.5 py-0.5 rounded-full">
-                      85% Spacious View
-                    </Badge>
                   </DialogTitle>
-                  <p className="text-xs sm:text-sm text-emerald-200/90 font-medium mt-1 flex items-center gap-3 flex-wrap">
-                    <span>ID Respon: <span className="font-mono text-white font-bold">{selectedResponse?.id}</span></span>
-                    <span>•</span>
-                    <span>Waktu Isian: <span className="font-mono text-white">{selectedResponse ? new Date(selectedResponse.submitted_at).toLocaleString('id-ID', { dateStyle: 'full', timeStyle: 'medium' }) : '-'}</span></span>
-                  </p>
+                  <div className="text-xs sm:text-sm text-slate-400 font-medium mt-1.5 flex items-center gap-3 flex-wrap">
+                    <span className="flex items-center gap-1.5">
+                      <span className="text-slate-500">ID:</span>
+                      <span className="font-mono text-emerald-300 font-semibold bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-800/60 text-xs">{selectedResponse?.id}</span>
+                    </span>
+                    <span className="text-slate-600">•</span>
+                    <span className="flex items-center gap-1 text-slate-300">
+                      <Calendar className="size-3.5 text-slate-400" />
+                      <span>{selectedResponse ? new Date(selectedResponse.submitted_at).toLocaleString('id-ID', { dateStyle: 'full', timeStyle: 'medium' }) : '-'}</span>
+                    </span>
+                  </div>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
-                {selectedResponse?.turnstile_verified && (
-                  <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-2xl text-xs font-bold bg-emerald-500/20 text-emerald-200 border border-emerald-400/30 backdrop-blur-md">
-                    <ShieldCheck className="size-4 text-emerald-300" />
-                    <span>Terverifikasi Bot Free (Turnstile)</span>
-                  </span>
-                )}
+              <div className="flex items-center gap-3">
                 <Button
                   type="button"
                   variant="outline"
                   onClick={() => window.print()}
-                  className="bg-white/10 hover:bg-white/20 text-white border-white/20 font-bold rounded-2xl text-xs gap-1.5 hidden sm:inline-flex cursor-pointer"
+                  className="bg-emerald-600 hover:bg-emerald-500 text-white border-emerald-500 font-bold rounded-xl text-xs gap-2 shadow-xs cursor-pointer"
                 >
-                  <Printer className="size-4 text-emerald-300" />
+                  <Printer className="size-4" />
                   <span>Cetak Detail</span>
                 </Button>
               </div>
@@ -513,53 +511,53 @@ export default function AdminResponPage() {
           </div>
 
           {detailLoading ? (
-            <div className="flex justify-center items-center py-24">
+            <div className="flex flex-col justify-center items-center py-24 space-y-3">
               <Loader2 className="size-10 animate-spin text-emerald-600" />
-              <span className="ml-3 text-sm font-bold text-slate-600 dark:text-slate-400">Memuat rincian data respon...</span>
+              <span className="text-sm font-bold text-slate-600 dark:text-slate-400">Memuat rincian data respon...</span>
             </div>
           ) : selectedResponse && (
-            <div className="p-6 sm:p-8 space-y-8 bg-slate-50/50 dark:bg-gray-950">
+            <div className="p-6 sm:p-8 space-y-8 bg-slate-50/60 dark:bg-gray-950">
               
               {/* Info Utama Responden Grid Cards */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 
-                <div className="p-4 rounded-2xl bg-white dark:bg-gray-900 border border-slate-200/80 dark:border-gray-800 shadow-xs space-y-2">
+                <div className="p-4 rounded-2xl bg-white dark:bg-gray-900 border border-slate-200/80 dark:border-gray-800 shadow-2xs space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Layanan Dikunjungi</span>
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Layanan Dikunjungi</span>
                     <div className="p-2 rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400">
                       <Building2 className="size-4" />
                     </div>
                   </div>
-                  <p className="font-extrabold text-sm text-slate-950 dark:text-white leading-snug">
+                  <p className="font-extrabold text-sm text-slate-900 dark:text-white leading-snug">
                     {selectedResponse.services?.name || '-'}
                   </p>
                 </div>
 
-                <div className="p-4 rounded-2xl bg-white dark:bg-gray-900 border border-slate-200/80 dark:border-gray-800 shadow-xs space-y-2">
+                <div className="p-4 rounded-2xl bg-white dark:bg-gray-900 border border-slate-200/80 dark:border-gray-800 shadow-2xs space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Periode Survei</span>
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Periode Survei</span>
                     <div className="p-2 rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/60 dark:text-blue-400">
                       <Calendar className="size-4" />
                     </div>
                   </div>
-                  <p className="font-extrabold text-sm text-slate-950 dark:text-white leading-snug">
+                  <p className="font-extrabold text-sm text-slate-900 dark:text-white leading-snug">
                     {selectedResponse.survey_periods?.label || '-'}
                   </p>
                 </div>
 
-                <div className="p-4 rounded-2xl bg-white dark:bg-gray-900 border border-slate-200/80 dark:border-gray-800 shadow-xs space-y-2">
+                <div className="p-4 rounded-2xl bg-white dark:bg-gray-900 border border-slate-200/80 dark:border-gray-800 shadow-2xs space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Identitas Responden</span>
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Identitas Responden</span>
                     <div className="p-2 rounded-xl bg-purple-50 text-purple-600 dark:bg-purple-950/60 dark:text-purple-400">
                       <User className="size-4" />
                     </div>
                   </div>
                   <div>
-                    <p className="font-extrabold text-sm text-slate-950 dark:text-white leading-snug">
+                    <p className="font-extrabold text-sm text-slate-900 dark:text-white leading-snug">
                       {selectedResponse.respondent_name || <span className="text-slate-400 italic">Anonim</span>}
                     </p>
                     {selectedResponse.respondent_contact && (
-                      <p className="text-xs font-mono font-bold text-slate-500 mt-0.5 flex items-center gap-1">
+                      <p className="text-xs font-mono font-semibold text-slate-500 mt-1 flex items-center gap-1.5">
                         <Phone className="size-3 text-slate-400" />
                         <span>{selectedResponse.respondent_contact}</span>
                       </p>
@@ -567,22 +565,22 @@ export default function AdminResponPage() {
                   </div>
                 </div>
 
-                <div className="p-4 rounded-2xl bg-white dark:bg-gray-900 border border-slate-200/80 dark:border-gray-800 shadow-xs space-y-2">
+                <div className="p-4 rounded-2xl bg-white dark:bg-gray-900 border border-slate-200/80 dark:border-gray-800 shadow-2xs space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Status Identitas</span>
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Status Identitas</span>
                     <div className="p-2 rounded-xl bg-amber-50 text-amber-600 dark:bg-amber-950/60 dark:text-amber-400">
-                      <ShieldAlert className="size-4" />
+                      <ShieldCheck className="size-4" />
                     </div>
                   </div>
                   <div>
                     {selectedResponse.is_anonymous ? (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-100 text-slate-700 border border-slate-200">
-                        <UserX className="size-3 text-slate-500" />
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold bg-slate-100 text-slate-700 dark:bg-gray-800 dark:text-slate-300 border border-slate-200 dark:border-gray-700">
+                        <UserX className="size-3.5 text-slate-500" />
                         <span>Responden Anonim</span>
                       </span>
                     ) : (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
-                        <UserCheck className="size-3 text-emerald-600" />
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                        <UserCheck className="size-3.5 text-emerald-600" />
                         <span>Teridentifikasi</span>
                       </span>
                     )}
@@ -593,26 +591,26 @@ export default function AdminResponPage() {
 
               {/* Data Demografi Responden */}
               {detailDemographics.length > 0 && (
-                <div className="space-y-4 bg-white dark:bg-gray-900 p-6 rounded-3xl border border-slate-200/80 dark:border-gray-800 shadow-sm">
+                <div className="space-y-4 bg-white dark:bg-gray-900 p-6 rounded-2xl border border-slate-200/80 dark:border-gray-800 shadow-2xs">
                   <div className="flex items-center gap-2.5 pb-3 border-b border-slate-100 dark:border-gray-800">
                     <div className="flex size-8 items-center justify-center rounded-xl bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 font-bold">
                       <FileText className="size-4" />
                     </div>
                     <div>
-                      <h4 className="text-sm font-black text-slate-950 dark:text-white uppercase tracking-wider">
+                      <h4 className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider">
                         Rincian Demografi Responden
                       </h4>
-                      <p className="text-xs text-slate-500 font-medium">Data latar belakang responden saat mengisi formulir survei</p>
+                      <p className="text-xs text-slate-500 font-medium">Informasi latar belakang demografi pengisi survei</p>
                     </div>
                   </div>
                   
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3.5">
                     {detailDemographics.map((d) => (
-                      <div key={d.id} className="flex flex-col justify-between p-4 rounded-2xl border border-slate-200/80 dark:border-gray-800 bg-slate-50/70 dark:bg-gray-800/50 space-y-1.5">
-                        <span className="text-xs font-extrabold text-slate-600 dark:text-slate-400">
+                      <div key={d.id} className="flex flex-col justify-between p-3.5 rounded-xl border border-slate-200/70 dark:border-gray-800 bg-slate-50/50 dark:bg-gray-800/40 space-y-1.5">
+                        <span className="text-[11px] font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
                           {d.field?.label_id || d.field_id}
                         </span>
-                        <span className="text-xs font-black text-slate-950 dark:text-white bg-white dark:bg-gray-900 px-3 py-2 rounded-xl border border-slate-200/60 dark:border-gray-700 shadow-2xs">
+                        <span className="text-xs font-black text-slate-900 dark:text-white bg-white dark:bg-gray-900 px-3 py-2 rounded-lg border border-slate-200/80 dark:border-gray-700">
                           {d.value}
                         </span>
                       </div>
@@ -621,39 +619,39 @@ export default function AdminResponPage() {
                 </div>
               )}
               
-              {/* Jawaban Penilaian Kualitas (2-Column Grid on Desktop) */}
+              {/* Jawaban Penilaian Kualitas */}
               {detailAnswers.length > 0 && (
-                <div className="space-y-4 bg-white dark:bg-gray-900 p-6 rounded-3xl border border-slate-200/80 dark:border-gray-800 shadow-sm">
+                <div className="space-y-4 bg-white dark:bg-gray-900 p-6 rounded-2xl border border-slate-200/80 dark:border-gray-800 shadow-2xs">
                   <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-gray-800">
                     <div className="flex items-center gap-2.5">
                       <div className="flex size-8 items-center justify-center rounded-xl bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 font-bold">
                         <ListTodo className="size-4" />
                       </div>
                       <div>
-                        <h4 className="text-sm font-black text-slate-950 dark:text-white uppercase tracking-wider">
+                        <h4 className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider">
                           Jawaban Penilaian Unsur Pelayanan
                         </h4>
-                        <p className="text-xs text-slate-500 font-medium">Hasil skor nilai rating yang diberikan untuk setiap pertanyaan survei</p>
+                        <p className="text-xs text-slate-500 font-medium">Hasil skor nilai rating yang diberikan responden</p>
                       </div>
                     </div>
-                    <Badge className="bg-emerald-100 text-emerald-800 font-bold px-3 py-1 rounded-full text-xs border border-emerald-200">
+                    <Badge variant="outline" className="bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 font-extrabold px-3 py-1 rounded-lg text-xs border-emerald-200 dark:border-emerald-800">
                       {detailAnswers.length} Pertanyaan Evaluasi
                     </Badge>
                   </div>
 
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {detailAnswers.map((a, idx) => (
-                      <div key={a.id} className="flex flex-col justify-between gap-3 p-4 rounded-2xl border border-slate-200/80 dark:border-gray-800 bg-slate-50/70 dark:bg-gray-800/40 hover:border-emerald-200 transition-colors">
-                        <div className="space-y-1.5">
+                      <div key={a.id} className="flex flex-col justify-between gap-3 p-4 rounded-xl border border-slate-200/70 dark:border-gray-800 bg-slate-50/50 dark:bg-gray-800/40 hover:border-emerald-300 transition-colors">
+                        <div className="space-y-2">
                           <div className="flex items-center gap-2">
-                            <span className="flex size-6 items-center justify-center rounded-lg bg-emerald-600 text-white text-[11px] font-black">
+                            <span className="flex size-5 items-center justify-center rounded bg-emerald-600 text-white text-[10px] font-black">
                               {String(idx + 1).padStart(2, '0')}
                             </span>
-                            <span className="text-[11px] font-extrabold text-emerald-700 dark:text-emerald-400 uppercase tracking-wide">
-                              Pertanyaan Evaluasi #{idx + 1}
+                            <span className="text-[10px] font-extrabold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider">
+                              Pertanyaan #{idx + 1}
                             </span>
                           </div>
-                          <p className="text-xs sm:text-sm font-extrabold text-slate-950 dark:text-slate-50 leading-relaxed pt-1">
+                          <p className="text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100 leading-snug">
                             {a.question?.question_text_id || a.question_id}
                           </p>
                         </div>
@@ -668,13 +666,13 @@ export default function AdminResponPage() {
 
               {/* Ulasan / Feedback Pesan & Saran */}
               {(selectedResponse.ipkp_feedback || selectedResponse.ipak_feedback) && (
-                <div className="space-y-4 bg-white dark:bg-gray-900 p-6 rounded-3xl border border-slate-200/80 dark:border-gray-800 shadow-sm">
+                <div className="space-y-4 bg-white dark:bg-gray-900 p-6 rounded-2xl border border-slate-200/80 dark:border-gray-800 shadow-2xs">
                   <div className="flex items-center gap-2.5 pb-3 border-b border-slate-100 dark:border-gray-800">
                     <div className="flex size-8 items-center justify-center rounded-xl bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300 font-bold">
                       <MessageSquareText className="size-4" />
                     </div>
                     <div>
-                      <h4 className="text-sm font-black text-slate-950 dark:text-white uppercase tracking-wider">
+                      <h4 className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider">
                         Catatan Saran &amp; Masukan Responden
                       </h4>
                       <p className="text-xs text-slate-500 font-medium">Kritik dan saran tertulis yang disampaikan oleh responden</p>
@@ -683,24 +681,24 @@ export default function AdminResponPage() {
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {selectedResponse.ipkp_feedback && (
-                      <div className="p-5 rounded-2xl bg-blue-50/80 dark:bg-blue-950/40 border border-blue-200/80 dark:border-blue-800/80 space-y-2">
+                      <div className="p-4 rounded-xl bg-blue-50/50 dark:bg-blue-950/30 border border-blue-200/60 dark:border-blue-800/60 space-y-2">
                         <div className="flex items-center gap-2 text-blue-900 dark:text-blue-200 font-extrabold text-xs">
-                          <Star className="size-4 text-blue-600 dark:text-blue-400" />
+                          <Star className="size-3.5 text-blue-600 dark:text-blue-400" />
                           <span>Saran Kualitas Pelayanan (IPKP)</span>
                         </div>
-                        <p className="text-xs font-semibold italic text-slate-900 dark:text-slate-100 leading-relaxed bg-white dark:bg-gray-900 p-4 rounded-xl border border-blue-100 dark:border-blue-900/60 shadow-2xs">
+                        <p className="text-xs font-medium italic text-slate-800 dark:text-slate-200 leading-relaxed bg-white dark:bg-gray-900 p-3.5 rounded-lg border border-blue-100 dark:border-blue-900/60">
                           &ldquo;{selectedResponse.ipkp_feedback}&rdquo;
                         </p>
                       </div>
                     )}
 
                     {selectedResponse.ipak_feedback && (
-                      <div className="p-5 rounded-2xl bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-800/80 space-y-2">
+                      <div className="p-4 rounded-xl bg-emerald-50/50 dark:bg-emerald-950/30 border border-emerald-200/60 dark:border-emerald-800/60 space-y-2">
                         <div className="flex items-center gap-2 text-emerald-900 dark:text-emerald-200 font-extrabold text-xs">
-                          <ShieldCheck className="size-4 text-emerald-600 dark:text-emerald-400" />
+                          <ShieldCheck className="size-3.5 text-emerald-600 dark:text-emerald-400" />
                           <span>Saran Anti Korupsi (IPAK)</span>
                         </div>
-                        <p className="text-xs font-semibold italic text-slate-900 dark:text-slate-100 leading-relaxed bg-white dark:bg-gray-900 p-4 rounded-xl border border-emerald-100 dark:border-emerald-900/60 shadow-2xs">
+                        <p className="text-xs font-medium italic text-slate-800 dark:text-slate-200 leading-relaxed bg-white dark:bg-gray-900 p-3.5 rounded-lg border border-emerald-100 dark:border-emerald-900/60">
                           &ldquo;{selectedResponse.ipak_feedback}&rdquo;
                         </p>
                       </div>
@@ -712,21 +710,12 @@ export default function AdminResponPage() {
             </div>
           )}
 
-          <DialogFooter className="p-4 sm:p-6 bg-slate-50 dark:bg-gray-800 border-t border-slate-100 dark:border-gray-700 flex justify-between items-center">
-            <span className="text-xs font-semibold text-slate-500 hidden sm:inline-block">
+          <DialogFooter className="p-4 sm:p-5 bg-slate-50 dark:bg-gray-900 border-t border-slate-200/80 dark:border-gray-800 flex justify-between items-center">
+            <span className="text-xs font-medium text-slate-500 hidden sm:inline-block">
               SI-ARUS • Kantor Kementerian Agama Kabupaten Barito Utara
             </span>
             <div className="flex gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => window.print()}
-                className="rounded-xl font-bold text-xs gap-1.5 cursor-pointer sm:hidden"
-              >
-                <Printer className="size-3.5" />
-                <span>Cetak</span>
-              </Button>
-              <DialogClose render={<Button variant="outline" className="rounded-xl font-bold text-xs px-5">Tutup Detail</Button>} />
+              <DialogClose render={<Button variant="outline" className="rounded-xl font-bold text-xs px-6">Tutup Detail</Button>} />
             </div>
           </DialogFooter>
         </DialogContent>

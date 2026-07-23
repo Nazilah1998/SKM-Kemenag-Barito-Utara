@@ -289,12 +289,24 @@ export default function SurveiPage() {
 
       const responseId = crypto.randomUUID()
 
+      // Determine submitted_at based on active period bounds
+      let submittedAt = new Date().toISOString()
+      if (period) {
+        const todayStr = submittedAt.split('T')[0]
+        if (todayStr > period.end_date) {
+          submittedAt = `${period.end_date}T23:59:59Z`
+        } else if (todayStr < period.start_date) {
+          submittedAt = `${period.start_date}T00:00:00Z`
+        }
+      }
+
       const { error: responseError } = await supabase
         .from('responses')
         .insert({
           id: responseId,
           service_id: formData.service_id,
           period_id: period?.id || null,
+          submitted_at: submittedAt,
           is_anonymous: formData.is_anonymous,
           respondent_name: formData.respondent_name?.trim() || 'Anonim',
           respondent_contact: formData.respondent_contact?.trim() || '-',
