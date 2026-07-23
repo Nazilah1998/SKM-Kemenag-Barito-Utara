@@ -173,7 +173,8 @@ export default function ArsipPage() {
 
   async function handleExportExcel() {
     try {
-      await exportToExcel(summary, byService, totalResponses)
+      const fullPeriodLabel = `${periodName} Tahun ${yearStr}`
+      await exportToExcel(summary, byService, totalResponses, fullPeriodLabel, demoSummary)
       toast.success('Berhasil mengekspor ke Excel')
     } catch {
       toast.error('Gagal mengekspor Excel')
@@ -182,7 +183,8 @@ export default function ArsipPage() {
 
   async function handleExportPdf() {
     try {
-      await exportToPdf(summary, byService, totalResponses)
+      const fullPeriodLabel = `${periodName} Tahun ${yearStr}`
+      await exportToPdf(summary, byService, totalResponses, fullPeriodLabel, demoSummary)
       toast.success('Berhasil mengekspor ke PDF')
     } catch {
       toast.error('Gagal mengekspor PDF')

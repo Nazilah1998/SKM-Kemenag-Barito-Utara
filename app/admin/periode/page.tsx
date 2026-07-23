@@ -25,6 +25,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogAction, AlertDialogCancel,
 } from '@/components/ui/alert-dialog'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 import type { SurveyPeriod } from '@/types'
@@ -44,6 +45,7 @@ export default function AdminPeriodePage() {
   const [periods, setPeriods] = useState<SurveyPeriod[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
+  const [activeTab, setActiveTab] = useState<'triwulan' | 'semester' | 'tahunan' | 'all'>('triwulan')
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editing, setEditing] = useState<SurveyPeriod | null>(null)
   const [saving, setSaving] = useState(false)
@@ -221,11 +223,6 @@ export default function AdminPeriodePage() {
     fetchPeriods()
   }
 
-  const isDateInRange = (start: string, end: string) => {
-    const today = new Date().toISOString().split('T')[0]
-    return today >= start && today <= end
-  }
-
   const getTypeBadge = (type: string) => {
     switch (type) {
       case 'triwulan':
@@ -249,11 +246,104 @@ export default function AdminPeriodePage() {
     }
   }
 
-  const filteredPeriods = periods.filter(p => 
-    p.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    p.start_date.includes(searchQuery) ||
-    p.end_date.includes(searchQuery)
-  )
+  const activePeriod = periods.find((p) => p.is_active)
+
+  const getPeriodStatusBadge = (p: SurveyPeriod) => {
+    const today = new Date().toISOString().split('T')[0]
+
+    // 1. Manually / Directly Active
+    if (p.is_active) {
+      const inRange = today >= p.start_date && today <= p.end_date
+      return (
+        <div className="flex flex-col items-start gap-1">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800 shadow-2xs">
+            <CheckCircle2 className="size-3.5 text-emerald-600 dark:text-emerald-400" />
+            <span>Sedang Aktif</span>
+          </span>
+          {!inRange && (
+            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-900 px-2 py-0.5 rounded-md" title="Diaktifkan secara manual di luar rentang tanggal">
+              <Sparkles className="size-3 text-amber-500" />
+              <span>Buka Manual (Luar Jadwal)</span>
+            </span>
+          )}
+        </div>
+      )
+    }
+
+    // 2. Dynamic Overlap Logic based on Active Reference Period
+    if (activePeriod) {
+      const overlapsWithActive = p.start_date <= activePeriod.end_date && p.end_date >= activePeriod.start_date
+      if (overlapsWithActive) {
+        return (
+          <div className="flex flex-col items-start gap-1">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800 shadow-2xs">
+              <CheckCircle2 className="size-3.5 text-emerald-600 dark:text-emerald-400" />
+              <span>Otomatis Aktif</span>
+            </span>
+            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-900 px-2 py-0.5 rounded-md" title={`Terhubung dengan periode aktif: ${activePeriod.label}`}>
+              <Sparkles className="size-3 text-emerald-500" />
+              <span>Terhubung {activePeriod.label}</span>
+            </span>
+          </div>
+        )
+      }
+
+      // If period ended before active period started -> Selesai
+      if (p.end_date < activePeriod.start_date) {
+        return (
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-600 border border-slate-200/90 dark:bg-gray-800 dark:text-slate-400 dark:border-gray-700" title="Periode ini telah berakhir">
+            <CheckCircle2 className="size-3.5 text-slate-400" />
+            <span>Selesai (Telah Berakhir)</span>
+          </span>
+        )
+      }
+
+      // If period starts after active period ends -> Belum Dimulai
+      if (p.start_date > activePeriod.end_date) {
+        return (
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200/90 dark:bg-blue-950/50 dark:text-blue-300 dark:border-blue-900" title="Jadwal periode ini belum dimulai">
+            <Calendar className="size-3.5 text-blue-500" />
+            <span>Belum Dimulai</span>
+          </span>
+        )
+      }
+    } else {
+      // Fallback relative to current date when no activePeriod is designated
+      if (today > p.end_date) {
+        return (
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-600 border border-slate-200/90 dark:bg-gray-800 dark:text-slate-400 dark:border-gray-700">
+            <CheckCircle2 className="size-3.5 text-slate-400" />
+            <span>Selesai (Telah Berakhir)</span>
+          </span>
+        )
+      }
+
+      if (today < p.start_date) {
+        return (
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200/90 dark:bg-blue-950/50 dark:text-blue-300 dark:border-blue-900">
+            <Calendar className="size-3.5 text-blue-500" />
+            <span>Belum Dimulai</span>
+          </span>
+        )
+      }
+    }
+
+    return (
+      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-900">
+        <Clock className="size-3.5 text-amber-600" />
+        <span>Nonaktif</span>
+      </span>
+    )
+  }
+
+  const filteredPeriods = periods.filter((p) => {
+    const matchesTab = activeTab === 'all' || p.period_type === activeTab
+    const matchesSearch =
+      p.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      p.start_date.includes(searchQuery) ||
+      p.end_date.includes(searchQuery)
+    return matchesTab && matchesSearch
+  })
 
   if (loading) {
     return (
@@ -306,13 +396,13 @@ export default function AdminPeriodePage() {
       {/* Main Table Card */}
       <Card className="border border-slate-200/80 dark:border-gray-800 shadow-xl shadow-slate-200/40 dark:shadow-black/20 bg-white dark:bg-gray-900 rounded-3xl overflow-hidden">
         
-        {/* Table Header & Search */}
-        <CardHeader className="bg-slate-50/50 dark:bg-gray-800/40 border-b border-slate-100 dark:border-gray-800 p-4 sm:p-6">
+        {/* Table Header, Tabs & Search */}
+        <CardHeader className="bg-slate-50/50 dark:bg-gray-800/40 border-b border-slate-100 dark:border-gray-800 p-4 sm:p-6 space-y-4">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-2">
               <CardTitle className="text-base font-bold text-slate-900 dark:text-white">Daftar Periode Survei</CardTitle>
               <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200 font-bold px-2.5 py-0.5 rounded-full text-xs">
-                {periods.length} Periode
+                {filteredPeriods.length} Periode
               </Badge>
             </div>
 
@@ -326,6 +416,51 @@ export default function AdminPeriodePage() {
               />
             </div>
           </div>
+
+          {/* 3 Main Type Tabs + All */}
+          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'triwulan' | 'semester' | 'tahunan' | 'all')} className="w-full">
+            <TabsList className="h-auto group-data-horizontal/tabs:h-auto p-1.5 bg-slate-200/60 dark:bg-gray-800/80 rounded-2xl border border-slate-200/80 dark:border-gray-700 grid grid-cols-2 sm:grid-cols-4 gap-1.5 w-full sm:max-w-2xl">
+              <TabsTrigger
+                value="triwulan"
+                className="h-9 rounded-xl px-3 text-xs font-bold transition-all data-active:bg-white dark:data-active:bg-gray-900 data-active:text-emerald-700 dark:data-active:text-emerald-400 data-active:shadow-sm border border-transparent data-active:border-slate-200/60 cursor-pointer flex items-center justify-center gap-1.5"
+              >
+                <span>Triwulan</span>
+                <span className="px-1.5 py-0.5 rounded-full bg-slate-200/80 dark:bg-gray-700 text-[10px] font-extrabold text-slate-700 dark:text-slate-200">
+                  {periods.filter((p) => p.period_type === 'triwulan').length}
+                </span>
+              </TabsTrigger>
+
+              <TabsTrigger
+                value="semester"
+                className="h-9 rounded-xl px-3 text-xs font-bold transition-all data-active:bg-white dark:data-active:bg-gray-900 data-active:text-purple-700 dark:data-active:text-purple-400 data-active:shadow-sm border border-transparent data-active:border-slate-200/60 cursor-pointer flex items-center justify-center gap-1.5"
+              >
+                <span>Semester</span>
+                <span className="px-1.5 py-0.5 rounded-full bg-slate-200/80 dark:bg-gray-700 text-[10px] font-extrabold text-slate-700 dark:text-slate-200">
+                  {periods.filter((p) => p.period_type === 'semester').length}
+                </span>
+              </TabsTrigger>
+
+              <TabsTrigger
+                value="tahunan"
+                className="h-9 rounded-xl px-3 text-xs font-bold transition-all data-active:bg-white dark:data-active:bg-gray-900 data-active:text-amber-700 dark:data-active:text-amber-400 data-active:shadow-sm border border-transparent data-active:border-slate-200/60 cursor-pointer flex items-center justify-center gap-1.5"
+              >
+                <span>Tahunan</span>
+                <span className="px-1.5 py-0.5 rounded-full bg-slate-200/80 dark:bg-gray-700 text-[10px] font-extrabold text-slate-700 dark:text-slate-200">
+                  {periods.filter((p) => p.period_type === 'tahunan').length}
+                </span>
+              </TabsTrigger>
+
+              <TabsTrigger
+                value="all"
+                className="h-9 rounded-xl px-3 text-xs font-bold transition-all data-active:bg-white dark:data-active:bg-gray-900 data-active:text-slate-900 dark:data-active:text-white data-active:shadow-sm border border-transparent data-active:border-slate-200/60 cursor-pointer flex items-center justify-center gap-1.5"
+              >
+                <span>Semua</span>
+                <span className="px-1.5 py-0.5 rounded-full bg-slate-200/80 dark:bg-gray-700 text-[10px] font-extrabold text-slate-700 dark:text-slate-200">
+                  {periods.length}
+                </span>
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
         </CardHeader>
 
         <CardContent className="p-0">
@@ -342,8 +477,6 @@ export default function AdminPeriodePage() {
             </TableHeader>
             <TableBody>
               {filteredPeriods.map((p) => {
-                const inRange = isDateInRange(p.start_date, p.end_date)
-
                 return (
                   <TableRow key={p.id} className={`group hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors ${p.is_active ? 'bg-emerald-50/60 dark:bg-emerald-950/20' : ''}`}>
                     
@@ -369,26 +502,7 @@ export default function AdminPeriodePage() {
                     </TableCell>
 
                     <TableCell>
-                      <div className="flex flex-col items-start gap-1">
-                        {p.is_active ? (
-                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800">
-                            <CheckCircle2 className="size-3.5 text-emerald-600 dark:text-emerald-400" />
-                            Sedang Aktif
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 border border-slate-200 dark:bg-gray-800 dark:text-slate-400 dark:border-gray-700">
-                            <Clock className="size-3.5 text-slate-400" />
-                            Nonaktif
-                          </span>
-                        )}
-
-                        {p.is_active && !inRange && (
-                          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-900 px-2 py-0.5 rounded-md" title="Diaktifkan secara manual di luar rentang tanggal">
-                            <Sparkles className="size-3 text-amber-500" />
-                            <span>Buka Manual (Luar Jadwal)</span>
-                          </span>
-                        )}
-                      </div>
+                      {getPeriodStatusBadge(p)}
                     </TableCell>
 
                     <TableCell className="text-right pr-6">

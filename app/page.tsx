@@ -12,89 +12,33 @@ import PageBanner from '@/components/shared/PageBanner'
 import { Footer } from '@/components/shared/Footer'
 import { createClient } from '@/lib/supabase/client'
 import { NILAI_MUTU } from '@/lib/constants'
-import type { IndexSummary, SurveyPeriod } from '@/types'
+import type { IndexSummary } from '@/types'
 import { motion } from 'framer-motion'
 
 export default function HomePage() {
   const { t, locale } = useI18n()
   const [summary, setSummary] = useState<IndexSummary[]>([])
-  const [activePeriod, setActivePeriod] = useState<SurveyPeriod | null>(null)
   const [totalResponses, setTotalResponses] = useState(0)
   const [loading, setLoading] = useState(true)
 
-  async function fetchPeriodAndResponses(supabaseClient: ReturnType<typeof createClient>) {
-    // 1. Fetch active period
-    const { data: activeP } = await supabaseClient
-      .from('survey_periods')
-      .select('*')
-      .eq('is_active', true)
-      .maybeSingle()
+  async function fetchTotalResponses(supabaseClient: ReturnType<typeof createClient>) {
+    // Count overall responses across all periods
+    const { count } = await supabaseClient
+      .from('responses')
+      .select('*', { count: 'exact', head: true })
 
-    let period = activeP as SurveyPeriod | null
-
-    if (!period) {
-      const today = new Date().toISOString().split('T')[0]
-      const { data: rangeP } = await supabaseClient
-        .from('survey_periods')
-        .select('*')
-        .lte('start_date', today)
-        .gte('end_date', today)
-        .order('start_date', { ascending: false })
-        .limit(1)
-        .maybeSingle()
-      period = rangeP as SurveyPeriod | null
-    }
-
-    if (!period) {
-      const { data: latestP } = await supabaseClient
-        .from('survey_periods')
-        .select('*')
-        .order('start_date', { ascending: false })
-        .limit(1)
-        .maybeSingle()
-      period = latestP as SurveyPeriod | null
-    }
-
-    setActivePeriod(period)
-
-    // 2. Count responses for active period using vw_total_responses / RPC / combined view
-    let responseCount = 0
-
-    if (period?.id) {
-      const { data: vData } = await supabaseClient
-        .from('vw_total_responses')
-        .select('total_count')
-        .eq('period_id', period.id)
-        .maybeSingle()
-
-      if (vData && typeof vData.total_count === 'number') {
-        responseCount = vData.total_count
-      } else {
-        const { data: rpcData } = await supabaseClient.rpc('get_response_count', {
-          p_period_id: period.id,
-        })
-        if (typeof rpcData === 'number') {
-          responseCount = rpcData
-        }
-      }
-    }
-
-    if (responseCount === 0) {
+    if (typeof count === 'number') {
+      setTotalResponses(count)
+    } else {
       const { data: allTotals } = await supabaseClient
         .from('vw_total_responses')
         .select('total_count')
 
       if (allTotals && allTotals.length > 0) {
-        responseCount = allTotals.reduce((acc, curr) => acc + (curr.total_count || 0), 0)
-      } else {
-        const { data: rpcAll } = await supabaseClient.rpc('get_response_count', {})
-        if (typeof rpcAll === 'number') {
-          responseCount = rpcAll
-        }
+        const responseCount = allTotals.reduce((acc, curr) => acc + (curr.total_count || 0), 0)
+        setTotalResponses(responseCount)
       }
     }
-
-    setTotalResponses(responseCount)
   }
 
   useEffect(() => {
@@ -106,7 +50,7 @@ export default function HomePage() {
         .returns<IndexSummary[]>()
 
       if (idxData) setSummary(idxData)
-      await fetchPeriodAndResponses(supabase)
+      await fetchTotalResponses(supabase)
       setLoading(false)
     }
     fetchData()
@@ -120,7 +64,7 @@ export default function HomePage() {
         supabase.from('vw_index_summary').select('*').returns<IndexSummary[]>().then(({ data }) => {
           if (data) setSummary(data)
         })
-        fetchPeriodAndResponses(supabase)
+        fetchTotalResponses(supabase)
       })
       .subscribe()
 
@@ -129,30 +73,6 @@ export default function HomePage() {
 
   const ipkp = summary.find((s) => s.index_type === 'IPKP')
   const ipak = summary.find((s) => s.index_type === 'IPAK')
-
-  const getCurrentPeriodText = () => {
-    const now = new Date()
-    const year = now.getFullYear()
-    const month = now.getMonth() + 1
-    const isEn = locale === 'en'
-    let quarter = isEn ? 'Quarter 1' : 'Triwulan I'
-    if (month >= 4 && month <= 6) quarter = isEn ? 'Quarter 2' : 'Triwulan II'
-    else if (month >= 7 && month <= 9) quarter = isEn ? 'Quarter 3' : 'Triwulan III'
-    else if (month >= 10 && month <= 12) quarter = isEn ? 'Quarter 4' : 'Triwulan IV'
-    return isEn ? `${quarter} Year ${year}` : `${quarter} Tahun ${year}`
-  }
-
-  const formatPeriodLabel = (label: string) => {
-    if (locale !== 'en') return label
-    return label
-      .replace(/Triwulan I\b/g, 'Quarter 1')
-      .replace(/Triwulan II\b/g, 'Quarter 2')
-      .replace(/Triwulan III\b/g, 'Quarter 3')
-      .replace(/Triwulan IV\b/g, 'Quarter 4')
-      .replace(/Semester 1\b/g, 'Semester 1')
-      .replace(/Semester 2\b/g, 'Semester 2')
-      .replace(/Tahun\b/g, 'Year')
-  }
 
   return (
     <>
@@ -335,7 +255,7 @@ export default function HomePage() {
                         <span className="text-xs font-bold text-slate-400">{locale === 'en' ? 'Respondents' : 'Orang'}</span>
                       </div>
                       <div className="text-[11px] font-extrabold text-purple-800 dark:text-purple-300 bg-purple-50 dark:bg-purple-950/80 px-3 py-1 rounded-full border border-purple-200 dark:border-purple-900">
-                        {activePeriod ? formatPeriodLabel(activePeriod.label) : getCurrentPeriodText()}
+                        {locale === 'en' ? 'Data Year 2026' : 'Data Tahun 2026'}
                       </div>
                     </>
                   )}

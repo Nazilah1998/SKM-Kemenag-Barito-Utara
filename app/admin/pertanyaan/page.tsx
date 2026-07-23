@@ -116,8 +116,14 @@ export default function AdminPertanyaanPage() {
         supabase.from('services').select('*').order('sort_order'),
       ])
       if (unsurRes.data) {
-        setUnsurList(unsurRes.data as Unsur[])
-        setFilterUnsur((prev) => prev || (unsurRes.data.length > 0 ? unsurRes.data[0].id : ''))
+        const sorted = (unsurRes.data as Unsur[]).sort((a, b) => {
+          if (a.index_type !== b.index_type) {
+            return a.index_type === 'IPKP' ? -1 : 1
+          }
+          return a.sort_order - b.sort_order
+        })
+        setUnsurList(sorted)
+        setFilterUnsur((prev) => prev || (sorted.length > 0 ? sorted[0].id : ''))
       }
       if (servicesRes.data) setServices(servicesRes.data as Service[])
     }
@@ -263,15 +269,18 @@ export default function AdminPertanyaanPage() {
               <Select value={filterUnsur} onValueChange={(v) => { if (v) { setFilterUnsur(v); setQuestions([]) } }}>
                 <SelectTrigger className="w-full rounded-2xl border-slate-200 font-bold text-xs sm:text-sm py-5">
                   <SelectValue placeholder="-- Pilih Unsur --">
-                    {selectedUnsurObj ? `${selectedUnsurObj.name} (${selectedUnsurObj.index_type})` : undefined}
+                    {selectedUnsurObj ? `U${selectedUnsurObj.sort_order} - ${selectedUnsurObj.name} (${selectedUnsurObj.index_type})` : undefined}
                   </SelectValue>
                 </SelectTrigger>
                 <SelectContent className="rounded-2xl p-1.5 shadow-xl max-h-72">
                   {unsurList.map((u) => (
                     <SelectItem key={u.id} value={u.id} className="rounded-xl py-2 cursor-pointer">
                       <div className="flex items-center gap-2">
-                        <span className={`text-[10px] font-black px-2 py-0.5 rounded-md ${
-                          u.index_type === 'IPKP' ? 'bg-emerald-100 text-emerald-800' : 'bg-indigo-100 text-indigo-800'
+                        <span className="text-[10px] font-black px-1.5 py-0.5 rounded-md bg-slate-800 text-white font-mono shrink-0">
+                          U{u.sort_order}
+                        </span>
+                        <span className={`text-[10px] font-black px-2 py-0.5 rounded-md shrink-0 ${
+                          u.index_type === 'IPKP' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300' : 'bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-300'
                         }`}>
                           {u.index_type}
                         </span>
@@ -471,13 +480,23 @@ export default function AdminPertanyaanPage() {
                 <Select value={unsurId || ''} onValueChange={(v) => { if (v) setValue('unsur_id', v) }}>
                   <SelectTrigger className="w-full rounded-2xl border-slate-200 text-xs font-semibold py-5">
                     <SelectValue placeholder="Pilih Unsur">
-                      {unsurList.find(u => u.id === unsurId) ? `${unsurList.find(u => u.id === unsurId)?.name} (${unsurList.find(u => u.id === unsurId)?.index_type})` : undefined}
+                      {unsurList.find(u => u.id === unsurId) ? `U${unsurList.find(u => u.id === unsurId)?.sort_order} - ${unsurList.find(u => u.id === unsurId)?.name} (${unsurList.find(u => u.id === unsurId)?.index_type})` : undefined}
                     </SelectValue>
                   </SelectTrigger>
-                  <SelectContent className="rounded-2xl">
+                  <SelectContent className="rounded-2xl max-h-60">
                     {unsurList.map((u) => (
-                      <SelectItem key={u.id} value={u.id} className="rounded-xl text-xs font-medium">
-                        {u.name} ({u.index_type})
+                      <SelectItem key={u.id} value={u.id} className="rounded-xl text-xs font-medium cursor-pointer">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-black px-1.5 py-0.5 rounded-md bg-slate-800 text-white font-mono shrink-0">
+                            U{u.sort_order}
+                          </span>
+                          <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-md shrink-0 ${
+                            u.index_type === 'IPKP' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300' : 'bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-300'
+                          }`}>
+                            {u.index_type}
+                          </span>
+                          <span className="font-bold text-xs">{u.name}</span>
+                        </div>
                       </SelectItem>
                     ))}
                   </SelectContent>

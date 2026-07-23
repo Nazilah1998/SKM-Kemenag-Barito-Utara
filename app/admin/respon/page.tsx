@@ -50,6 +50,7 @@ export default function AdminResponPage() {
 
   // Filters state
   const [searchQuery, setSearchQuery] = useState('')
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('')
   const [filterService, setFilterService] = useState<string>('')
   const [filterPeriod, setFilterPeriod] = useState<string>('')
   const [filterDateFrom, setFilterDateFrom] = useState('')
@@ -59,6 +60,15 @@ export default function AdminResponPage() {
   const [page, setPage] = useState(1)
   const [totalCount, setTotalCount] = useState(0)
   const pageSize = 10
+
+  // Debounce search input (300ms) to minimize server/DB query load
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery)
+      setPage(1)
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [searchQuery])
 
   // Detail Modal state
   const [selectedResponse, setSelectedResponse] = useState<Response | null>(null)
@@ -98,8 +108,9 @@ export default function AdminResponPage() {
     if (filterDateFrom) query = query.gte('submitted_at', `${filterDateFrom}T00:00:00`)
     if (filterDateTo) query = query.lte('submitted_at', `${filterDateTo}T23:59:59`)
 
-    if (searchQuery) {
-      query = query.or(`respondent_name.ilike.%${searchQuery}%,respondent_contact.ilike.%${searchQuery}%`)
+    if (debouncedSearchQuery.trim()) {
+      const q = debouncedSearchQuery.trim()
+      query = query.or(`respondent_name.ilike.%${q}%,respondent_contact.ilike.%${q}%`)
     }
 
     const from = (page - 1) * pageSize
@@ -115,7 +126,7 @@ export default function AdminResponPage() {
       setTotalCount(count || 0)
     }
     setLoading(false)
-  }, [supabase, filterService, filterPeriod, filterDateFrom, filterDateTo, searchQuery, page, pageSize])
+  }, [supabase, filterService, filterPeriod, filterDateFrom, filterDateTo, debouncedSearchQuery, page, pageSize])
 
   useEffect(() => {
     let ignore = false
@@ -244,13 +255,18 @@ export default function AdminResponPage() {
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <div className="space-y-1.5">
               <Label className="text-xs font-bold text-slate-600">Layanan</Label>
-              <Select value={filterService} onValueChange={(v) => setFilterService(v || '')}>
+              <Select value={filterService || 'ALL'} onValueChange={(v) => { setFilterService(!v || v === 'ALL' ? '' : v); setPage(1); }}>
                 <SelectTrigger className="w-full rounded-xl border-slate-200 text-xs font-medium">
-                  <SelectValue placeholder="Semua Layanan" />
+                  <SelectValue placeholder="-- Semua Layanan --">
+                    {filterService ? (services.find((s) => s.id === filterService)?.name || '-- Semua Layanan --') : '-- Semua Layanan --'}
+                  </SelectValue>
                 </SelectTrigger>
-                <SelectContent className="rounded-2xl">
+                <SelectContent className="rounded-2xl max-h-60">
+                  <SelectItem value="ALL" className="rounded-xl text-xs font-bold text-slate-500">
+                    -- Semua Layanan --
+                  </SelectItem>
                   {services.map((s) => (
-                    <SelectItem key={s.id} value={s.id} className="rounded-xl text-xs">
+                    <SelectItem key={s.id} value={s.id} className="rounded-xl text-xs font-medium cursor-pointer">
                       {s.name}
                     </SelectItem>
                   ))}
@@ -260,16 +276,39 @@ export default function AdminResponPage() {
 
             <div className="space-y-1.5">
               <Label className="text-xs font-bold text-slate-600">Periode Survei</Label>
-              <Select value={filterPeriod} onValueChange={(v) => setFilterPeriod(v || '')}>
+              <Select value={filterPeriod || 'ALL'} onValueChange={(v) => { setFilterPeriod(!v || v === 'ALL' ? '' : v); setPage(1); }}>
                 <SelectTrigger className="w-full rounded-xl border-slate-200 text-xs font-medium">
-                  <SelectValue placeholder="Semua Periode" />
+                  <SelectValue placeholder="-- Semua Periode --">
+                    {filterPeriod ? (
+                      (() => {
+                        const target = periods.find((p) => p.id === filterPeriod)
+                        if (!target) return '-- Semua Periode --'
+                        const today = new Date().toISOString().split('T')[0]
+                        const tag = target.is_active ? '(Aktif)' : (target.end_date && target.end_date < today ? '(Selesai)' : '(Nonaktif)')
+                        return `${target.label} ${tag}`
+                      })()
+                    ) : '-- Semua Periode --'}
+                  </SelectValue>
                 </SelectTrigger>
-                <SelectContent className="rounded-2xl">
-                  {periods.map((p) => (
-                    <SelectItem key={p.id} value={p.id} className="rounded-xl text-xs">
-                      {p.label} {p.is_active ? '(Aktif)' : ''}
-                    </SelectItem>
-                  ))}
+                <SelectContent className="rounded-2xl max-h-60">
+                  <SelectItem value="ALL" className="rounded-xl text-xs font-bold text-slate-500">
+                    -- Semua Periode --
+                  </SelectItem>
+                  {periods.map((p) => {
+                    const today = new Date().toISOString().split('T')[0]
+                    const isPast = Boolean(p.end_date && p.end_date < today)
+                    const tag = p.is_active ? '(Aktif)' : (isPast ? '(Selesai)' : '(Nonaktif)')
+                    return (
+                      <SelectItem key={p.id} value={p.id} className="rounded-xl text-xs font-medium cursor-pointer">
+                        <span>{p.label}</span>{' '}
+                        <span className={`font-bold ${
+                          p.is_active ? 'text-emerald-600' : isPast ? 'text-slate-500' : 'text-amber-600'
+                        }`}>
+                          {tag}
+                        </span>
+                      </SelectItem>
+                    )
+                  })}
                 </SelectContent>
               </Select>
             </div>
@@ -279,7 +318,7 @@ export default function AdminResponPage() {
               <Input
                 type="date"
                 value={filterDateFrom}
-                onChange={(e) => setFilterDateFrom(e.target.value)}
+                onChange={(e) => { setFilterDateFrom(e.target.value); setPage(1); }}
                 className="rounded-xl border-slate-200 text-xs"
               />
             </div>
@@ -289,7 +328,7 @@ export default function AdminResponPage() {
               <Input
                 type="date"
                 value={filterDateTo}
-                onChange={(e) => setFilterDateTo(e.target.value)}
+                onChange={(e) => { setFilterDateTo(e.target.value); setPage(1); }}
                 className="rounded-xl border-slate-200 text-xs"
               />
             </div>

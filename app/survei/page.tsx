@@ -289,24 +289,13 @@ export default function SurveiPage() {
 
       const responseId = crypto.randomUUID()
 
-      // Determine submitted_at based on active period bounds
-      let submittedAt = new Date().toISOString()
-      if (period) {
-        const todayStr = submittedAt.split('T')[0]
-        if (todayStr > period.end_date) {
-          submittedAt = `${period.end_date}T23:59:59Z`
-        } else if (todayStr < period.start_date) {
-          submittedAt = `${period.start_date}T00:00:00Z`
-        }
-      }
-
       const { error: responseError } = await supabase
         .from('responses')
         .insert({
           id: responseId,
           service_id: formData.service_id,
           period_id: period?.id || null,
-          submitted_at: submittedAt,
+          submitted_at: new Date().toISOString(),
           is_anonymous: formData.is_anonymous,
           respondent_name: formData.respondent_name?.trim() || 'Anonim',
           respondent_contact: formData.respondent_contact?.trim() || '-',
@@ -399,23 +388,23 @@ export default function SurveiPage() {
       {/* Floating Disclaimer / PERHATIAN Modal Dialog */}
       <AnimatePresence>
         {disclaimerOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-950/75 backdrop-blur-md">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-950/75 backdrop-blur-md overflow-y-auto">
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
               transition={{ duration: 0.25 }}
-              className="w-full max-w-2xl overflow-hidden rounded-3xl bg-white dark:bg-gray-900 border border-slate-200/90 dark:border-gray-800 shadow-2xl"
+              className="w-full max-w-2xl max-h-[92vh] flex flex-col my-auto overflow-hidden rounded-3xl bg-white dark:bg-gray-900 border border-slate-200/90 dark:border-gray-800 shadow-2xl"
             >
               {/* Header Banner */}
-              <div className="bg-gradient-to-r from-emerald-950 via-teal-900 to-emerald-900 p-6 text-white text-center relative">
-                <div className="mx-auto flex size-14 items-center justify-center rounded-2xl bg-white/10 border border-white/20 backdrop-blur-md mb-3 shadow-inner">
-                  <ShieldAlert className="size-8 text-amber-400" />
+              <div className="shrink-0 bg-gradient-to-r from-emerald-950 via-teal-900 to-emerald-900 p-4 sm:p-6 text-white text-center relative">
+                <div className="mx-auto flex size-11 sm:size-14 items-center justify-center rounded-2xl bg-white/10 border border-white/20 backdrop-blur-md mb-2 sm:mb-3 shadow-inner">
+                  <ShieldAlert className="size-6 sm:size-8 text-amber-400" />
                 </div>
-                <h2 className="text-xl sm:text-2xl font-black uppercase tracking-wider text-white">
+                <h2 className="text-lg sm:text-2xl font-black uppercase tracking-wider text-white">
                   {locale === 'en' ? 'ATTENTION!' : 'PERHATIAN!'}
                 </h2>
-                <p className="text-xs text-emerald-200/90 mt-1 font-medium">
+                <p className="text-[11px] sm:text-xs text-emerald-200/90 mt-0.5 sm:mt-1 font-medium">
                   {locale === 'en'
                     ? 'Public Satisfaction Survey Respondent Consent Statement'
                     : 'Pernyataan Persetujuan Responden Survei Kepuasan Masyarakat'}
@@ -423,14 +412,14 @@ export default function SurveiPage() {
               </div>
 
               {/* Content Body */}
-              <div className="p-6 sm:p-8 space-y-4 text-slate-700 dark:text-slate-300 leading-relaxed text-xs sm:text-sm">
+              <div className="flex-1 overflow-y-auto p-4 sm:p-8 space-y-3 sm:space-y-4 text-slate-700 dark:text-slate-300 leading-relaxed text-xs sm:text-sm">
                 <p className="font-extrabold text-slate-900 dark:text-white text-sm sm:text-base">
                   {locale === 'en' ? 'I hereby declare that:' : 'Dengan ini saya menyatakan bahwa:'}
                 </p>
 
-                <div className="space-y-3.5 bg-slate-50 dark:bg-gray-800/50 p-4 sm:p-5 rounded-2xl border border-slate-200/80 dark:border-gray-700 font-medium">
-                  <div className="flex items-start gap-3">
-                    <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 text-xs font-black mt-0.5">1</span>
+                <div className="space-y-3 bg-slate-50 dark:bg-gray-800/50 p-3.5 sm:p-5 rounded-2xl border border-slate-200/80 dark:border-gray-700 font-medium">
+                  <div className="flex items-start gap-2.5 sm:gap-3">
+                    <span className="flex size-5 sm:size-6 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 text-[11px] sm:text-xs font-black mt-0.5">1</span>
                     <p>
                       {locale === 'en' ? (
                         <>I am willing to complete this questionnaire and consent to my data being used for the <strong>Public Satisfaction Survey</strong> at the Ministry of Religious Affairs of Barito Utara Regency.</>
@@ -440,8 +429,8 @@ export default function SurveiPage() {
                     </p>
                   </div>
 
-                  <div className="flex items-start gap-3">
-                    <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 text-xs font-black mt-0.5">2</span>
+                  <div className="flex items-start gap-2.5 sm:gap-3">
+                    <span className="flex size-5 sm:size-6 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 text-[11px] sm:text-xs font-black mt-0.5">2</span>
                     <p>
                       {locale === 'en' ? (
                         <>All data and answers I enter correspond to the <strong>actual facts and true conditions</strong> known to me.</>
@@ -451,8 +440,8 @@ export default function SurveiPage() {
                     </p>
                   </div>
 
-                  <div className="flex items-start gap-3">
-                    <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 text-xs font-black mt-0.5">3</span>
+                  <div className="flex items-start gap-2.5 sm:gap-3">
+                    <span className="flex size-5 sm:size-6 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 text-[11px] sm:text-xs font-black mt-0.5">3</span>
                     <p>
                       {locale === 'en' ? (
                         <>I also assume <strong>full responsibility</strong> for all information filled in this survey form and agree to abide by the provisions regulated under <strong>Law No. 11 of 2008 concerning Electronic Information & Transactions (ITE)</strong>.</>
@@ -465,12 +454,12 @@ export default function SurveiPage() {
               </div>
 
               {/* Action Buttons */}
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-5 sm:p-6 bg-slate-50/80 dark:bg-gray-800/40 border-t border-slate-100 dark:border-gray-800">
+              <div className="shrink-0 flex flex-col-reverse sm:flex-row items-center justify-between gap-2.5 p-4 sm:p-6 bg-slate-50/80 dark:bg-gray-800/40 border-t border-slate-100 dark:border-gray-800">
                 <Button
                   type="button"
                   variant="outline"
                   onClick={() => router.push('/')}
-                  className="w-full sm:w-auto rounded-2xl border-rose-200 text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 font-extrabold text-xs sm:text-sm py-5 px-6 gap-2 cursor-pointer"
+                  className="w-full sm:w-auto rounded-2xl border-rose-200 text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 font-extrabold text-xs sm:text-sm py-4 sm:py-5 px-6 gap-2 cursor-pointer"
                 >
                   <X className="size-4" />
                   <span>{locale === 'en' ? 'Disagree' : 'Tidak Setuju'}</span>
@@ -479,7 +468,7 @@ export default function SurveiPage() {
                 <Button
                   type="button"
                   onClick={() => setDisclaimerOpen(false)}
-                  className="w-full sm:w-auto bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-extrabold text-xs sm:text-sm rounded-2xl py-5 px-8 shadow-lg shadow-emerald-600/30 hover:scale-[1.02] transition-all gap-2 cursor-pointer"
+                  className="w-full sm:w-auto bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-extrabold text-xs sm:text-sm rounded-2xl py-4 sm:py-5 px-8 shadow-lg shadow-emerald-600/30 hover:scale-[1.02] transition-all gap-2 cursor-pointer"
                 >
                   <CheckCircle2 className="size-4 text-emerald-200" />
                   <span>{locale === 'en' ? 'Agree & Continue' : 'Setuju & Lanjutkan'}</span>

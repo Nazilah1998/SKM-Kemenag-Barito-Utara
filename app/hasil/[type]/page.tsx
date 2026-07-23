@@ -182,7 +182,8 @@ export default function HasilPage() {
 
   async function handleExportExcel() {
     try {
-      await exportToExcel(summary, byService, activeTotalResponses)
+      const activePeriodLabel = 'Hasil Survei SKM 2026'
+      await exportToExcel(summary, byService, activeTotalResponses, activePeriodLabel, demoSummary)
       toast.success(locale === 'en' ? 'Successfully exported to Excel' : 'Berhasil mengekspor ke Excel')
     } catch {
       toast.error(locale === 'en' ? 'Failed to export Excel' : 'Gagal mengekspor Excel')
@@ -191,7 +192,8 @@ export default function HasilPage() {
 
   async function handleExportPdf() {
     try {
-      await exportToPdf(summary, byService, activeTotalResponses)
+      const activePeriodLabel = 'Hasil Survei SKM 2026'
+      await exportToPdf(summary, byService, activeTotalResponses, activePeriodLabel, demoSummary)
       toast.success(locale === 'en' ? 'Successfully exported to PDF' : 'Berhasil mengekspor ke PDF')
     } catch {
       toast.error(locale === 'en' ? 'Failed to export PDF' : 'Gagal mengekspor PDF')

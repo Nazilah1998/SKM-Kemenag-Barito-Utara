@@ -95,7 +95,8 @@ export default function LaporanPage() {
 
   async function handleExportPdf() {
     try {
-      await exportToPdf(summary, byService, activeTotalResponses)
+      const periodLabel = 'Laporan PermenPAN-RB Tahun 2026'
+      await exportToPdf(summary, byService, activeTotalResponses, periodLabel, demoSummary)
       toast.success('Berhasil mengekspor Laporan PDF PermenPAN-RB')
     } catch {
       toast.error('Gagal mengekspor PDF')

@@ -9,6 +9,13 @@ export interface Service {
   updated_at: string
 }
 
+export interface ServiceCategory {
+  id: string
+  name: string
+  sort_order: number
+  created_at?: string
+}
+
 export interface SurveyPeriod {
   id: string
   period_type: 'triwulan' | 'semester' | 'tahunan'
