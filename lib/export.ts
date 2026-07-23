@@ -21,7 +21,8 @@ export async function exportToExcel(
   byService: IndexByService[],
   totalResponses: number,
   periodName?: string,
-  demoSummary?: DemographicSummary[]
+  demoSummary?: DemographicSummary[],
+  options?: OfficialReportOptions
 ) {
   const workbook = new ExcelJS.Workbook()
   workbook.creator = 'SI-ARUS Kemenag Barito Utara'
@@ -235,12 +236,99 @@ export async function exportToExcel(
     ws2.getColumn(3).width = 20
   }
 
+  // ==========================================
+  // WORKSHEET 3: REKAPITULASI UNSUR & PENGESAHAN PERMENPAN-RB
+  // ==========================================
+  if (options?.unsurList && options.unsurList.length > 0) {
+    const ws3 = workbook.addWorksheet('Unsur & Pengesahan')
+
+    ws3.mergeCells('A1:E1')
+    ws3.getCell('A1').value = `REKAPITULASI NILAI PER UNSUR INDIKATOR (${options.indexType || 'IPKP'})`
+    ws3.getCell('A1').font = { name: 'Arial', size: 12, bold: true, color: { argb: '065F46' } }
+
+    ws3.mergeCells('A2:E2')
+    ws3.getCell('A2').value = 'FORMAT PERMENPAN-RB NO. 14 TAHUN 2017'
+    ws3.getCell('A2').font = { name: 'Arial', size: 10, bold: true, color: { argb: '475569' } }
+    ws3.addRow([])
+
+    const thUnsur = ws3.addRow(['No', 'Unsur Indikator', 'NRR Unsur', 'Konversi (NRR x 25)', 'Kategori Mutu'])
+    thUnsur.font = { name: 'Arial', size: 9, bold: true, color: { argb: 'FFFFFF' } }
+    thUnsur.alignment = { vertical: 'middle', horizontal: 'center' }
+    thUnsur.height = 24
+    thUnsur.eachCell((c) => {
+      c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: '047857' } }
+      c.border = thinBorder
+    })
+
+    options.unsurList.forEach((u, i) => {
+      const r = ws3.addRow([i + 1, u.unsur_name, u.avg, u.konversi, u.mutu])
+      r.height = 20
+      r.font = { name: 'Arial', size: 9 }
+
+      r.getCell(1).alignment = { vertical: 'middle', horizontal: 'center' }
+      r.getCell(2).alignment = { vertical: 'middle', horizontal: 'left' }
+      r.getCell(3).alignment = { vertical: 'middle', horizontal: 'center' }
+      r.getCell(3).numFmt = '0.00'
+      r.getCell(4).alignment = { vertical: 'middle', horizontal: 'center' }
+      r.getCell(4).numFmt = '0.00'
+      r.getCell(4).font = { name: 'Arial', size: 9, bold: true, color: { argb: '047857' } }
+      r.getCell(5).alignment = { vertical: 'middle', horizontal: 'center' }
+      r.getCell(5).font = { name: 'Arial', size: 9, bold: true }
+
+      r.eachCell((c) => { c.border = thinBorder })
+    })
+
+    // Lembar Pengesahan
+    ws3.addRow([])
+    ws3.addRow([])
+    const rDate = ws3.addRow(['', '', '', '', `Muara Teweh, ${options.reportDate || '30 September 2026'}`])
+    rDate.font = { name: 'Arial', size: 9, italic: true }
+    rDate.getCell(5).alignment = { horizontal: 'center' }
+
+    ws3.addRow([])
+    const rRole = ws3.addRow(['Ketua Tim Pelaksana Survei,', '', '', '', 'Mengetahui,\nKepala Kantor Kemenag Kab. Barito Utara'])
+    rRole.font = { name: 'Arial', size: 9, bold: true }
+    rRole.getCell(1).alignment = { horizontal: 'center' }
+    rRole.getCell(5).alignment = { horizontal: 'center' }
+
+    ws3.addRow([])
+    ws3.addRow([])
+    ws3.addRow([])
+
+    const rName = ws3.addRow([options.ketuaName || 'Drs. H. M. Yamin, M.H.', '', '', '', options.kepalaName || 'H. Abdul Majid, S.Ag., M.Pd.'])
+    rName.font = { name: 'Arial', size: 9, bold: true, underline: true }
+    rName.getCell(1).alignment = { horizontal: 'center' }
+    rName.getCell(5).alignment = { horizontal: 'center' }
+
+    const rNip = ws3.addRow([`NIP. ${options.ketuaNip || '19800815 200501 1 005'}`, '', '', '', `NIP. ${options.kepalaNip || '19750512 200003 1 002'}`])
+    rNip.font = { name: 'Arial', size: 8, color: { argb: '475569' } }
+    rNip.getCell(1).alignment = { horizontal: 'center' }
+    rNip.getCell(5).alignment = { horizontal: 'center' }
+
+    ws3.getColumn(1).width = 8
+    ws3.getColumn(2).width = 38
+    ws3.getColumn(3).width = 16
+    ws3.getColumn(4).width = 22
+    ws3.getColumn(5).width = 28
+  }
+
   // Generate Buffer & Download
   const buffer = await workbook.xlsx.writeBuffer()
   const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
-  const filename = `Laporan_SKM_SIKAP_${format(new Date(), 'yyyyMMdd_HHmm')}.xlsx`
+  const filename = `Laporan_SKM_PermenPANRB_${options?.indexType || 'IPKP'}_${format(new Date(), 'yyyyMMdd_HHmm')}.xlsx`
   
   downloadFile(blob, filename)
+}
+
+export interface OfficialReportOptions {
+  unsurList?: { unsur_name: string; avg: number; konversi: number; mutu: string }[]
+  lowestUnsur?: { unsur_name: string; konversi: number; mutu: string } | null
+  kepalaName?: string
+  kepalaNip?: string
+  ketuaName?: string
+  ketuaNip?: string
+  reportDate?: string
+  indexType?: 'IPKP' | 'IPAK'
 }
 
 export async function exportToPdf(
@@ -248,11 +336,19 @@ export async function exportToPdf(
   byService: IndexByService[],
   totalResponses: number,
   periodName?: string,
-  demoSummary?: DemographicSummary[]
+  demoSummary?: DemographicSummary[],
+  options?: OfficialReportOptions
 ) {
-  const element = React.createElement(SurveyReport, { summary, byService, totalResponses, periodName, demoSummary })
+  const element = React.createElement(SurveyReport, {
+    summary,
+    byService,
+    totalResponses,
+    periodName,
+    demoSummary,
+    ...options,
+  })
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const blob = await pdf(element as any).toBlob()
-  const filename = `Laporan_SKM_SIKAP_${format(new Date(), 'yyyyMMdd_HHmm')}.pdf`
+  const filename = `Laporan_SKM_PermenPANRB_${options?.indexType || 'IPKP'}_${format(new Date(), 'yyyyMMdd_HHmm')}.pdf`
   downloadFile(blob, filename)
 }

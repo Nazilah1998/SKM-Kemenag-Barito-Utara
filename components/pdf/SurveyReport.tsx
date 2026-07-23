@@ -269,6 +269,65 @@ const styles = StyleSheet.create({
     textAlign: 'right',
     color: '#334155',
   },
+  // RTL Box
+  rtlBox: {
+    backgroundColor: '#fffbeb',
+    borderColor: '#fef08a',
+    borderWidth: 1,
+    borderRadius: 4,
+    padding: 8,
+    marginTop: 6,
+  },
+  rtlTitle: {
+    fontSize: 8.5,
+    fontWeight: 'bold',
+    color: '#78350f',
+    marginBottom: 3,
+  },
+  rtlText: {
+    fontSize: 8,
+    color: '#334155',
+    lineHeight: 1.3,
+  },
+
+  // Signatures / Lembar Pengesahan
+  signatureSection: {
+    marginTop: 18,
+    paddingTop: 10,
+  },
+  signatureDate: {
+    textAlign: 'right',
+    fontSize: 8.5,
+    marginBottom: 10,
+    color: '#334155',
+  },
+  signatureGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 6,
+  },
+  signatureBox: {
+    width: '45%',
+    textAlign: 'center',
+    alignItems: 'center',
+  },
+  signatureRole: {
+    fontSize: 8.5,
+    fontWeight: 'bold',
+    marginBottom: 40,
+    color: '#0f172a',
+  },
+  signatureName: {
+    fontSize: 9,
+    fontWeight: 'bold',
+    textDecoration: 'underline',
+    color: '#0f172a',
+  },
+  signatureNip: {
+    fontSize: 7.5,
+    color: '#475569',
+    marginTop: 2,
+  },
 
   // Footer
   footer: {
@@ -295,9 +354,31 @@ interface SurveyReportProps {
   totalResponses: number
   periodName?: string
   demoSummary?: DemographicSummary[]
+  unsurList?: { unsur_name: string; avg: number; konversi: number; mutu: string }[]
+  lowestUnsur?: { unsur_name: string; konversi: number; mutu: string } | null
+  kepalaName?: string
+  kepalaNip?: string
+  ketuaName?: string
+  ketuaNip?: string
+  reportDate?: string
+  indexType?: 'IPKP' | 'IPAK'
 }
 
-export function SurveyReport({ summary, byService, totalResponses, periodName, demoSummary }: SurveyReportProps) {
+export function SurveyReport({
+  summary,
+  byService,
+  totalResponses,
+  periodName,
+  demoSummary,
+  unsurList,
+  lowestUnsur,
+  kepalaName = 'H. Abdul Majid, S.Ag., M.Pd.',
+  kepalaNip = '19750512 200003 1 002',
+  ketuaName = 'Drs. H. M. Yamin, M.H.',
+  ketuaNip = '19800815 200501 1 005',
+  reportDate = '30 September 2026',
+  indexType = 'IPKP',
+}: SurveyReportProps) {
   // Helper to aggregate demographic data for a field_key
   const getDemoFieldData = (key: string) => {
     if (!demoSummary || demoSummary.length === 0) return []
@@ -566,6 +647,74 @@ export function SurveyReport({ summary, byService, totalResponses, periodName, d
                 </Text>
               </View>
             ))}
+          </View>
+        </View>
+
+        {/* Section 5: Unsur Breakdown & Lembar Pengesahan (PermenPANRB No. 14 Th 2017) */}
+        {unsurList && unsurList.length > 0 && (
+          <View style={styles.section} wrap={false}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>5. Rekapitulasi Nilai Per Unsur Indikator ({indexType})</Text>
+            </View>
+
+            <View style={styles.table}>
+              <View style={styles.tableRowHeader} wrap={false}>
+                <Text style={[styles.th, { width: '10%', textAlign: 'center' }]}>No</Text>
+                <Text style={[styles.th, { width: '40%' }]}>Unsur Indikator</Text>
+                <Text style={[styles.th, { width: '15%', textAlign: 'center' }]}>NRR</Text>
+                <Text style={[styles.th, { width: '15%', textAlign: 'center' }]}>Konversi</Text>
+                <Text style={[styles.th, { width: '20%', textAlign: 'center' }]}>Mutu</Text>
+              </View>
+              {unsurList.map((u, i) => (
+                <View style={i % 2 === 1 ? styles.tableRowAlt : styles.tableRow} key={i} wrap={false}>
+                  <Text style={[styles.td, { width: '10%', textAlign: 'center', fontWeight: 'bold' }]}>{i + 1}</Text>
+                  <Text style={[styles.td, { width: '40%' }]}>{u.unsur_name}</Text>
+                  <Text style={[styles.td, { width: '15%', textAlign: 'center', fontWeight: 'bold' }]}>{u.avg.toFixed(2)}</Text>
+                  <Text style={[styles.td, { width: '15%', textAlign: 'center', fontWeight: 'bold', color: '#047857' }]}>{u.konversi.toFixed(2)}</Text>
+                  <Text style={[styles.td, { width: '20%', textAlign: 'center', fontWeight: 'bold' }]}>{u.mutu}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
+
+        {/* Section 6: Rencana Tindak Lanjut (RTL) Rekomendasi */}
+        <View style={styles.section} wrap={false}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>6. Rencana Tindak Lanjut (RTL) Rekomendasi Perbaikan</Text>
+          </View>
+          <View style={styles.rtlBox}>
+            {lowestUnsur ? (
+              <>
+                <Text style={styles.rtlTitle}>
+                  • Unsur Prioritas Perbaikan: {lowestUnsur.unsur_name} (Konversi: {lowestUnsur.konversi.toFixed(2)} - {lowestUnsur.mutu})
+                </Text>
+                <Text style={styles.rtlText}>
+                  Rekomendasi Tindak Lanjut: Memperkuat koordinasi tim petugas PTSP, menyederhanakan petunjuk teknis persyaratan permohonan, serta meningkatkan transparansi kepastian waktu penyelesaian layanan kepada masyarakat.
+                </Text>
+              </>
+            ) : (
+              <Text style={styles.rtlText}>
+                Seluruh unsur indikator pelayanan telah memenuhi kriteria kinerja Sangat Baik.
+              </Text>
+            )}
+          </View>
+        </View>
+
+        {/* Lembar Pengesahan Pejabat */}
+        <View style={styles.signatureSection} wrap={false}>
+          <Text style={styles.signatureDate}>Muara Teweh, {reportDate}</Text>
+          <View style={styles.signatureGrid}>
+            <View style={styles.signatureBox}>
+              <Text style={styles.signatureRole}>Ketua Tim Pelaksana Survei,</Text>
+              <Text style={styles.signatureName}>{ketuaName}</Text>
+              <Text style={styles.signatureNip}>NIP. {ketuaNip}</Text>
+            </View>
+            <View style={styles.signatureBox}>
+              <Text style={styles.signatureRole}>Mengetahui, Kepala Kantor Kemenag Kab. Barito Utara</Text>
+              <Text style={styles.signatureName}>{kepalaName}</Text>
+              <Text style={styles.signatureNip}>NIP. {kepalaNip}</Text>
+            </View>
           </View>
         </View>
 

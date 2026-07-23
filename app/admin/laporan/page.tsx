@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
-import { Printer, Download, FileText, Calendar, Building2, Loader2 } from 'lucide-react'
+import { Printer, Download, FileText, Calendar, Building2, Loader2, FileSpreadsheet } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { createClient } from '@/lib/supabase/client'
 import type { IndexSummary, IndexByService, UnsurSummary, DemographicSummary, Service } from '@/types'
-import { exportToPdf } from '@/lib/export'
+import { exportToPdf, exportToExcel } from '@/lib/export'
 import { toast } from 'sonner'
 
 export default function LaporanPage() {
@@ -93,13 +93,34 @@ export default function LaporanPage() {
     window.print()
   }
 
+  const reportOptions = {
+    unsurList,
+    lowestUnsur,
+    kepalaName,
+    kepalaNip,
+    ketuaName,
+    ketuaNip,
+    reportDate,
+    indexType,
+  }
+
   async function handleExportPdf() {
     try {
-      const periodLabel = 'Laporan PermenPAN-RB Tahun 2026'
-      await exportToPdf(summary, byService, activeTotalResponses, periodLabel, demoSummary)
+      await exportToPdf(summary, filteredByService, activeTotalResponses, period, demoSummary, reportOptions)
       toast.success('Berhasil mengekspor Laporan PDF PermenPAN-RB')
-    } catch {
+    } catch (err) {
+      console.error('PDF export error:', err)
       toast.error('Gagal mengekspor PDF')
+    }
+  }
+
+  async function handleExportExcel() {
+    try {
+      await exportToExcel(summary, filteredByService, activeTotalResponses, period, demoSummary, reportOptions)
+      toast.success('Berhasil mengekspor Laporan Excel PermenPAN-RB')
+    } catch (err) {
+      console.error('Excel export error:', err)
+      toast.error('Gagal mengekspor Excel')
     }
   }
 
@@ -108,12 +129,16 @@ export default function LaporanPage() {
       {/* Control Panel (Hidden when printing) */}
       <Card className="border border-slate-200/80 dark:border-gray-800 shadow-xl shadow-slate-200/40 dark:shadow-black/20 bg-white dark:bg-gray-900 rounded-3xl print:hidden">
         <CardHeader className="bg-slate-50/50 dark:bg-gray-800/40 border-b border-slate-100 dark:border-gray-800 p-6">
-          <CardTitle className="text-lg font-black text-slate-900 dark:text-white flex items-center justify-between">
+          <CardTitle className="text-lg font-black text-slate-900 dark:text-white flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="flex items-center gap-2">
               <FileText className="size-5 text-emerald-600" />
               <span>Generator Laporan Hasil Survei (LHP) PermenPAN-RB</span>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <Button type="button" variant="outline" onClick={handleExportExcel} className="rounded-2xl h-10 border-emerald-300 text-emerald-800 bg-emerald-50/60 hover:bg-emerald-100 font-bold cursor-pointer gap-2">
+                <FileSpreadsheet className="size-4 text-emerald-600" />
+                <span>Unduh Excel</span>
+              </Button>
               <Button type="button" variant="outline" onClick={handleExportPdf} className="rounded-2xl h-10 border-emerald-200 text-emerald-700 font-bold hover:bg-emerald-50 cursor-pointer gap-2">
                 <Download className="size-4" />
                 <span>Unduh PDF</span>

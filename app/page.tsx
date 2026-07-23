@@ -22,12 +22,20 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true)
 
   async function fetchTotalResponses(supabaseClient: ReturnType<typeof createClient>) {
-    // Count overall responses across all periods
+    // Call get_response_count RPC (SECURITY DEFINER) so public visitors also get exact count
+    const { data, error } = await supabaseClient.rpc('get_response_count')
+
+    if (!error && typeof data === 'number') {
+      setTotalResponses(data)
+      return
+    }
+
+    // Fallback: Count overall responses across all periods
     const { count } = await supabaseClient
       .from('responses')
       .select('*', { count: 'exact', head: true })
 
-    if (typeof count === 'number') {
+    if (typeof count === 'number' && count > 0) {
       setTotalResponses(count)
     } else {
       const { data: allTotals } = await supabaseClient
